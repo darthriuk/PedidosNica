@@ -366,12 +366,7 @@ function getFooter() {
     })();
   </script>
 
-  <!-- BOTÓN FLOTANTE Y MODAL GLOBAL DE ACCESO MÓVIL (LAN + TÚNEL QR) -->
-  <button id="pnMobileAccessFab" onclick="window.openMobileAccessModal()" class="fixed bottom-4 left-4 z-40 px-3.5 py-2 rounded-2xl bg-[#121212]/95 hover:bg-[#1C1C1C] border border-[#06C167]/50 text-white shadow-2xl flex items-center gap-2 text-xs font-bold transition-all backdrop-blur-md">
-    <span>📲</span>
-    <span>Abrir en Teléfono / QR</span>
-  </button>
-
+  <!-- MODAL GLOBAL DE ACCESO MÓVIL (LAN + TÚNEL QR) -->
   <div id="pnMobileAccessModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-[#121212] border-2 border-[#06C167]/40 rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto text-xs">
       <div class="flex items-center justify-between pb-3 border-b border-[#262626]">

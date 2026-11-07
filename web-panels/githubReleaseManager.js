@@ -74,6 +74,7 @@ function collectProjectFiles() {
   const allowDirs = [
     '.github',
     'android-apps',
+    'docs',
     'web-panels',
     'backend/osrm-dispatch/src',
     'client-app',
@@ -245,9 +246,15 @@ async function syncProjectAndTriggerBuild({ token, newVersion, changelog, lanUrl
     force: true
   }, token);
 
-  // 4. Subir los 3 archivos .APK compilados localmente directo a GitHub Releases
-  console.log('[4/4] Publicando Release y subiendo APKs compilados localmente a GitHub Releases...');
+  // 4. Subir los 3 archivos .APK compilados localmente directo a GitHub Releases y activar GitHub Pages (/docs)
+  console.log('[4/4] Publicando Release, activando GitHub Pages y subiendo APKs compilados localmente...');
   const release = await publishLocalReleaseToGitHub(token, current, compiledApks);
+
+  try {
+    await githubRequest(`/repos/${GITHUB_REPO}/pages`, 'POST', {
+      source: { branch: 'main', path: '/docs' }
+    }, token);
+  } catch (_) {}
 
   return {
     success: true,
@@ -257,6 +264,7 @@ async function syncProjectAndTriggerBuild({ token, newVersion, changelog, lanUrl
     bundledAssets,
     compiledApks,
     releaseUrl: release.html_url,
+    webPagesUrl: 'https://darthriuk.github.io/PedidosNica/',
     repoUrl: `https://github.com/${GITHUB_REPO}`,
     actionsUrl: `https://github.com/${GITHUB_REPO}/actions`,
     releasesUrl: `https://github.com/${GITHUB_REPO}/releases`

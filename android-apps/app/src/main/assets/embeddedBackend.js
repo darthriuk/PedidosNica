@@ -3145,6 +3145,27 @@ module.exports = {
           await handleDriverApi(reqMock, resMock, apiPath, opts);
         } else if (cleanUrl.startsWith('/api/restaurant/')) {
           await handleRestaurantApi(reqMock, resMock, apiPath, opts);
+        } else if (cleanUrl === '/api/admin/commission' && method === 'POST') {
+          resMock.end(JSON.stringify({ success: true, commission_rate: 15.0 }));
+        } else if (cleanUrl === '/api/admin/fleet' && method === 'GET') {
+          const driverUsers = (localStore.users || []).filter(u => u.role === 'DRIVER');
+          const drivers = driverUsers.map(u => {
+            const dp = u.driver_profile || {};
+            return {
+              driver_id: u.id,
+              full_name: u.full_name,
+              phone: u.phone,
+              vehicle_type: dp.vehicle_type || 'MOTORCYCLE',
+              vehicle_label: dp.vehicle_type === 'BICYCLE' ? 'Bicicleta' : (dp.vehicle_type === 'CAR' ? 'Auto' : 'Motocicleta'),
+              license_plate: dp.license_plate || 'M 000-000',
+              current_status: dp.current_status || 'AVAILABLE',
+              battery_level: dp.battery_level || 95,
+              rating: dp.rating || 4.9,
+              lat: 12.1260,
+              lng: -86.2650
+            };
+          });
+          resMock.end(JSON.stringify({ drivers, activeOrders: localStore.orders || [] }));
         } else if (cleanUrl === '/api/network-info') {
           resMock.end(JSON.stringify({ lanIp: '192.168.1.20', port: 3000, lanBaseUrl: LAN_SERVER }));
         } else {
@@ -3161,8 +3182,13 @@ module.exports = {
     });
   };
 
-  // Interceptor de navegación para que enlaces internos funcionen entre archivos .html del APK
+  // Interceptor de navegación para que enlaces internos funcionen entre archivos .html del APK y GitHub Pages
   const ROUTE_MAP = {
+    '/': 'index.html',
+    '/index.html': 'index.html',
+    '/admin': 'index.html',
+    '/admin/control-tower': 'control-tower.html',
+    '/admin/fares': 'fares.html',
     '/client': 'client.html',
     '/order': 'client.html',
     '/client/tracking': 'client-tracking.html',

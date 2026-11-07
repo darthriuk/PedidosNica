@@ -5,6 +5,7 @@ const { execSync } = require('child_process');
 const ROOT_DIR = path.resolve(__dirname, '..');
 const WEB_PANELS_DIR = __dirname;
 const ASSETS_DIR = path.join(ROOT_DIR, 'android-apps', 'app', 'src', 'main', 'assets');
+const DOCS_DIR = path.join(ROOT_DIR, 'docs');
 const DIST_DIR = path.join(ROOT_DIR, 'dist');
 const TOOLCHAIN_DIR = path.join(ROOT_DIR, '.android-toolchain');
 
@@ -282,6 +283,27 @@ ${restaurantApiSrc}
           await handleDriverApi(reqMock, resMock, apiPath, opts);
         } else if (cleanUrl.startsWith('/api/restaurant/')) {
           await handleRestaurantApi(reqMock, resMock, apiPath, opts);
+        } else if (cleanUrl === '/api/admin/commission' && method === 'POST') {
+          resMock.end(JSON.stringify({ success: true, commission_rate: 15.0 }));
+        } else if (cleanUrl === '/api/admin/fleet' && method === 'GET') {
+          const driverUsers = (localStore.users || []).filter(u => u.role === 'DRIVER');
+          const drivers = driverUsers.map(u => {
+            const dp = u.driver_profile || {};
+            return {
+              driver_id: u.id,
+              full_name: u.full_name,
+              phone: u.phone,
+              vehicle_type: dp.vehicle_type || 'MOTORCYCLE',
+              vehicle_label: dp.vehicle_type === 'BICYCLE' ? 'Bicicleta' : (dp.vehicle_type === 'CAR' ? 'Auto' : 'Motocicleta'),
+              license_plate: dp.license_plate || 'M 000-000',
+              current_status: dp.current_status || 'AVAILABLE',
+              battery_level: dp.battery_level || 95,
+              rating: dp.rating || 4.9,
+              lat: 12.1260,
+              lng: -86.2650
+            };
+          });
+          resMock.end(JSON.stringify({ drivers, activeOrders: localStore.orders || [] }));
         } else if (cleanUrl === '/api/network-info') {
           resMock.end(JSON.stringify({ lanIp: '192.168.1.20', port: 3000, lanBaseUrl: LAN_SERVER }));
         } else {
@@ -298,8 +320,13 @@ ${restaurantApiSrc}
     });
   };
 
-  // Interceptor de navegación para que enlaces internos funcionen entre archivos .html del APK
+  // Interceptor de navegación para que enlaces internos funcionen entre archivos .html del APK y GitHub Pages
   const ROUTE_MAP = {
+    '/': 'index.html',
+    '/index.html': 'index.html',
+    '/admin': 'index.html',
+    '/admin/control-tower': 'control-tower.html',
+    '/admin/fares': 'fares.html',
     '/client': 'client.html',
     '/order': 'client.html',
     '/client/tracking': 'client-tracking.html',
@@ -356,6 +383,7 @@ function transformHtmlForEmbeddedAsset(html, clientJsMap) {
 
 async function generateApkAssets(baseUrl = 'http://127.0.0.1:3000', lanBaseUrl = 'http://192.168.1.20:3000') {
   fs.mkdirSync(ASSETS_DIR, { recursive: true });
+  fs.mkdirSync(DOCS_DIR, { recursive: true });
 
   const clientJsMap = {
     clientFront: fs.readFileSync(path.join(WEB_PANELS_DIR, 'clientFront.js'), 'utf8')
@@ -367,11 +395,16 @@ async function generateApkAssets(baseUrl = 'http://127.0.0.1:3000', lanBaseUrl =
       .replace(/window\.location\.href\s*=\s*['"]\/restaurant['"]/g, "window.location.href = 'restaurant.html'")
   };
 
-  // Escribir motor backend embebido
+  // Escribir motor backend embebido en assets/ (Android APK) y docs/ (GitHub Pages Web Global)
   const embeddedBackendCode = buildEmbeddedBackendJs(lanBaseUrl);
   fs.writeFileSync(path.join(ASSETS_DIR, 'embeddedBackend.js'), embeddedBackendCode, 'utf8');
+  fs.writeFileSync(path.join(DOCS_DIR, 'embeddedBackend.js'), embeddedBackendCode, 'utf8');
+  fs.writeFileSync(path.join(DOCS_DIR, '.nojekyll'), '', 'utf8');
 
   const pagesToBundle = [
+    { route: '/', file: 'index.html' },
+    { route: '/admin/control-tower', file: 'control-tower.html' },
+    { route: '/admin/fares', file: 'fares.html' },
     { route: '/client', file: 'client.html' },
     { route: '/client/tracking', file: 'client-tracking.html' },
     { route: '/driver', file: 'driver.html' },
@@ -388,6 +421,7 @@ async function generateApkAssets(baseUrl = 'http://127.0.0.1:3000', lanBaseUrl =
     const rawHtml = await res.text();
     const compiledHtml = transformHtmlForEmbeddedAsset(rawHtml, clientJsMap);
     fs.writeFileSync(path.join(ASSETS_DIR, page.file), compiledHtml, 'utf8');
+    fs.writeFileSync(path.join(DOCS_DIR, page.file), compiledHtml, 'utf8');
   }
 
   return pagesToBundle.map(p => p.file).concat(['embeddedBackend.js']);

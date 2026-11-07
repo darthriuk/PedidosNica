@@ -563,35 +563,35 @@
     if (selectedRestaurantId && activeRestaurantData) {
       const r = activeRestaurantData;
       hero.innerHTML = `
-        <div class="h-36 sm:h-52 w-full relative">
+        <div class="h-40 sm:h-56 w-full relative">
           <img src="${r.logo_url || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200'}" alt="${r.name}" class="w-full h-full object-cover" />
           <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
           
           <div class="absolute top-3 left-3">
-            <button onclick="selectRestaurant(null)" class="px-3 py-1.5 rounded-full bg-black/80 hover:bg-black text-white text-xs font-bold border border-white/20 flex items-center gap-1.5 backdrop-blur-md transition-all shadow-lg active:scale-95">
-              <span>←</span>
-              <span>Ver todos los restaurantes y platillos</span>
+            <button onclick="selectRestaurant(null)" class="px-4 py-2.5 min-h-[44px] rounded-2xl bg-black/85 hover:bg-black text-white text-xs sm:text-sm font-extrabold border border-white/25 flex items-center gap-2 backdrop-blur-md transition-all shadow-lg active:scale-95">
+              <span class="text-base">←</span>
+              <span>Ver todos los restaurantes</span>
             </button>
           </div>
         </div>
 
         <div class="px-4 sm:px-6 pb-4 sm:pb-5 pt-2 relative -mt-8 sm:-mt-10 flex flex-col md:flex-row md:items-end justify-between gap-3">
           <div>
-            <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">${r.name}</h1>
-            <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#A6A6A6]">
-              <span class="flex items-center gap-1 font-bold text-white bg-[#1F1F1F] px-2 py-0.5 rounded-md">
+            <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">${r.name}</h1>
+            <div class="flex flex-wrap items-center gap-2 mt-1.5 text-xs sm:text-sm text-[#A6A6A6]">
+              <span class="flex items-center gap-1 font-bold text-white bg-[#1F1F1F] px-2.5 py-1 rounded-lg">
                 ⭐ ${Number(r.rating || 5.0).toFixed(1)}
               </span>
               <span>•</span>
-              <span class="truncate max-w-[200px] sm:max-w-none">📍 ${r.address}</span>
+              <span class="truncate max-w-[220px] sm:max-w-none">📍 ${r.address}</span>
               <span>•</span>
-              <span class="text-white font-medium">⏱️ ${r.estimated_time}</span>
+              <span class="text-white font-semibold">⏱️ ${r.estimated_time}</span>
             </div>
           </div>
 
           <div>
-            <button onclick="selectRestaurant(null)" class="px-4 py-2 rounded-full bg-[#1F1F1F] hover:bg-[#282828] text-white text-xs font-bold border border-[#2E2E2E] transition-all">
-              Ver Todos los Restaurantes
+            <button onclick="selectRestaurant(null)" class="w-full sm:w-auto px-5 py-3 min-h-[44px] rounded-2xl bg-[#1F1F1F] hover:bg-[#282828] text-white text-xs sm:text-sm font-extrabold border border-[#2E2E2E] transition-all active:scale-95">
+              ← Todos los Restaurantes
             </button>
           </div>
         </div>
@@ -599,22 +599,23 @@
     } else {
       // Banner general de bienvenida PedidosNica
       hero.innerHTML = `
-        <div class="relative p-6 sm:p-8 bg-gradient-to-r from-[#0d1f14] via-[#121212] to-[#121212] border-b border-[#262626]">
+        <div class="relative p-5 sm:p-8 bg-gradient-to-r from-[#0d1f14] via-[#121212] to-[#121212] border-b border-[#262626]">
           <div class="max-w-2xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#06C167]/15 border border-[#06C167]/30 text-[#06C167] text-xs font-bold mb-3">
-              <span class="w-2 h-2 rounded-full bg-[#06C167] animate-pulse"></span>
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#06C167]/15 border border-[#06C167]/30 text-[#06C167] text-xs sm:text-sm font-extrabold mb-3">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#06C167] animate-pulse"></span>
               <span>Entrega Rápida en Managua</span>
             </div>
             <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight">
               ¿Qué se te antoja hoy?
             </h1>
-            <p class="text-xs sm:text-sm text-[#A6A6A6] mt-2 leading-relaxed">
-              Encuentra lo que deseas: <span class="text-white font-semibold">pupusas, carnes asadas, pizzas, hamburguesas, combos</span> y más. El sistema asigna automáticamente el local más cercano dentro del radio delimitado.
+            <p class="text-sm text-[#A6A6A6] mt-2 leading-relaxed">
+              Pide <span class="text-white font-bold">pupusas, carnes asadas, pizzas, hamburguesas, combos</span> y más con un toque.
             </p>
-            <div class="flex items-center gap-2 mt-4 text-xs text-[#A6A6A6]">
-              <span class="bg-[#1F1F1F] px-3 py-1.5 rounded-full border border-[#2E2E2E] text-white font-medium">
-                📍 Entregar en: <strong class="text-[#06C167]">${currentDeliveryAddress.split(',')[0]}</strong>
-              </span>
+            <div class="flex items-center gap-2 mt-4">
+              <button type="button" onclick="openClientProfileModal('addresses')" class="bg-[#1F1F1F] hover:bg-[#282828] px-4 py-2.5 min-h-[42px] rounded-2xl border border-[#2E2E2E] text-xs sm:text-sm text-white font-bold flex items-center gap-2 active:scale-95 transition-all">
+                <span>📍 Entregar en: <strong class="text-[#06C167]">${currentDeliveryAddress.split(',')[0]}</strong></span>
+                <span class="text-[#06C167] text-xs">Cambiar ▼</span>
+              </button>
             </div>
           </div>
         </div>
@@ -685,41 +686,41 @@
 
       return `
         <div onclick="openProductModal('${p.id}')" class="bg-[#121212] hover:bg-[#1A1A1A] border border-[#262626] hover:border-[#06C167]/50 rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 group flex flex-col justify-between shadow-lg active:scale-[0.99]">
-          <div class="relative h-36 w-full overflow-hidden bg-black">
+          <div class="relative h-40 w-full overflow-hidden bg-black">
             <img src="${p.image_url || 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500'}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30"></div>
             
             <div class="absolute top-2.5 left-2.5">
-              <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full border backdrop-blur-md ${tagClass}">
+              <span class="text-xs font-extrabold px-3 py-1 rounded-full border backdrop-blur-md ${tagClass}">
                 ${tagText}
               </span>
             </div>
 
-            <div class="absolute bottom-2 left-2.5 right-2.5">
-              <span class="text-[11px] font-semibold text-white/90 drop-shadow truncate block">
-                ${p.restaurant_name}
+            <div class="absolute bottom-2 left-3 right-3">
+              <span class="text-xs font-bold text-white/95 drop-shadow truncate block">
+                🏪 ${p.restaurant_name}
               </span>
             </div>
           </div>
 
-          <div class="p-3.5 flex-1 flex flex-col justify-between">
+          <div class="p-4 flex-1 flex flex-col justify-between">
             <div>
-              <h4 class="font-bold text-white text-sm group-hover:text-[#06C167] transition-colors line-clamp-1 mb-1">
+              <h4 class="font-extrabold text-white text-base group-hover:text-[#06C167] transition-colors line-clamp-1 mb-1">
                 ${p.name}
               </h4>
-              <p class="text-[11px] text-[#A6A6A6] line-clamp-2 leading-relaxed">
+              <p class="text-xs sm:text-sm text-[#A6A6A6] line-clamp-2 leading-relaxed">
                 ${p.description || 'Delicioso platillo preparado fresco al momento con ingredientes seleccionados.'}
               </p>
             </div>
 
-            <div class="flex items-center justify-between mt-3 pt-2 border-t border-[#222222]">
+            <div class="flex items-center justify-between mt-3.5 pt-3 border-t border-[#222222] gap-2">
               <div class="flex items-baseline gap-1.5">
-                <span class="text-sm font-black text-white font-mono">C$ ${Number(displayPrice).toFixed(2)}</span>
-                ${oldPrice ? `<span class="text-[10px] text-[#666666] line-through font-mono">C$ ${Number(oldPrice).toFixed(2)}</span>` : ''}
+                <span class="text-base font-black text-white font-mono">C$ ${Number(displayPrice).toFixed(2)}</span>
+                ${oldPrice ? `<span class="text-xs text-[#666666] line-through font-mono">C$ ${Number(oldPrice).toFixed(2)}</span>` : ''}
               </div>
 
-              <button onclick="event.stopPropagation(); openProductModal('${p.id}');" class="w-7 h-7 rounded-full bg-white text-black font-extrabold text-sm flex items-center justify-center shadow-md hover:bg-[#06C167] hover:text-black transition-colors" title="Personalizar y agregar">
-                +
+              <button onclick="event.stopPropagation(); openProductModal('${p.id}');" class="px-4 py-2 min-h-[40px] rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs sm:text-sm flex items-center justify-center gap-1 shadow-md active:scale-95 transition-all" title="Personalizar y agregar">
+                <span>+ Agregar</span>
               </button>
             </div>
           </div>
@@ -782,38 +783,40 @@
         <div onclick="selectRestaurant('${r.id}')" class="bg-[#121212] hover:bg-[#1A1A1A] border border-[#262626] hover:border-[#06C167] rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 group flex flex-col justify-between shadow-lg active:scale-[0.99]">
           
           <!-- Banner Superior del Restaurante -->
-          <div class="relative h-32 w-full overflow-hidden bg-black">
+          <div class="relative h-36 w-full overflow-hidden bg-black">
             <img src="${cover}" alt="${r.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
 
             <!-- Logo Avatar flotante -->
-            <div class="absolute bottom-2 left-3 flex items-center gap-2">
-              <img src="${logo}" alt="${r.name}" class="w-9 h-9 rounded-full object-cover border-2 border-black shadow-md bg-[#1F1F1F]" />
-              <span class="text-xs font-bold text-white drop-shadow truncate max-w-[130px] sm:max-w-[150px]">${r.name}</span>
+            <div class="absolute bottom-2.5 left-3 flex items-center gap-2.5">
+              <img src="${logo}" alt="${r.name}" class="w-11 h-11 rounded-full object-cover border-2 border-[#06C167] shadow-md bg-[#1F1F1F]" />
+              <span class="text-sm sm:text-base font-black text-white drop-shadow truncate max-w-[160px] sm:max-w-[180px]">${r.name}</span>
             </div>
 
             <!-- Rating badge -->
-            <div class="absolute top-2 right-2">
-              <span class="bg-black/75 backdrop-blur-md text-white text-[11px] font-bold px-2 py-0.5 rounded-full border border-white/10 flex items-center gap-1 shadow">
+            <div class="absolute top-2.5 right-2.5">
+              <span class="bg-black/80 backdrop-blur-md text-white text-xs font-extrabold px-2.5 py-1 rounded-full border border-white/15 flex items-center gap-1 shadow">
                 <span class="text-yellow-400">⭐</span> ${rating}
               </span>
             </div>
           </div>
 
           <!-- Información y detalles -->
-          <div class="p-3 flex-1 flex flex-col justify-between">
-            <div class="space-y-1">
-              <p class="text-xs text-[#A6A6A6] truncate flex items-center gap-1">
+          <div class="p-4 flex-1 flex flex-col justify-between">
+            <div class="space-y-1.5">
+              <p class="text-xs sm:text-sm text-[#A6A6A6] truncate flex items-center gap-1.5">
                 <span>📍</span> ${address}
               </p>
-              <div class="flex items-center gap-2 text-[11px] text-[#A6A6A6] pt-1">
-                <span class="text-white font-medium flex items-center gap-1">⏱️ ${time}</span>
+              <div class="flex items-center gap-2 text-xs sm:text-sm text-[#A6A6A6]">
+                <span class="text-white font-semibold flex items-center gap-1">⏱️ ${time}</span>
               </div>
             </div>
 
-            <div class="mt-3 pt-2 border-t border-[#222222] flex items-center justify-between">
-              <span class="text-[11px] font-bold text-[#06C167] group-hover:underline">Ver Menú Completo →</span>
-              <span class="text-xs text-[#757575] group-hover:text-white transition-colors">↗</span>
+            <div class="mt-3.5 pt-2.5 border-t border-[#222222]">
+              <div class="w-full py-2.5 px-3.5 min-h-[42px] rounded-xl bg-[#06C167]/15 group-hover:bg-[#06C167] text-[#06C167] group-hover:text-black border border-[#06C167]/30 font-black text-xs sm:text-sm flex items-center justify-between transition-all">
+                <span>Ver Menú Completo</span>
+                <span>→</span>
+              </div>
             </div>
           </div>
 
@@ -822,7 +825,7 @@
     }).join('');
   }
 
-  // 4. RENDERIZADO DE CATEGORÍAS (PILLS DINÁMICOS)
+  // 4. RENDERIZADO DE CATEGORÍAS (PILLS DINÁMICOS GRANDES Y ERGONÓMICOS)
   function renderCategories() {
     const list = document.getElementById('categoriesList');
     if (!list) return;
@@ -843,17 +846,17 @@
       return `
         <button onclick="filterCategory('${cat}')" class="category-pill ${
           isActive 
-            ? 'active bg-[#06C167] text-black shadow-sm' 
+            ? 'active bg-[#06C167] text-black shadow-md' 
             : 'bg-[#1F1F1F] hover:bg-[#282828] text-white border border-[#2E2E2E]'
-        } px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 snap-start flex items-center gap-1.5">
-          <span>${icon}</span>
+        } px-5 py-3 min-h-[46px] rounded-2xl text-sm font-black transition-all shrink-0 snap-start flex items-center gap-2 active:scale-95">
+          <span class="text-base">${icon}</span>
           <span>${cat}</span>
         </button>
       `;
     }).join('');
   }
 
-  // Helper para renderizar tarjeta individual de producto
+  // Helper para renderizar tarjeta individual de producto (Botones y Textos Grandes)
   function renderSingleProductCard(p) {
     const isPromo = Boolean(p.discount_price);
     const displayPrice = isPromo ? p.discount_price : p.price;
@@ -866,50 +869,53 @@
         !isAvailable 
           ? 'bg-[#0E0E0E] border border-[#222222] opacity-55 cursor-not-allowed' 
           : 'bg-[#121212] hover:bg-[#1A1A1A] border border-[#262626] hover:border-[#383838] cursor-pointer'
-      } rounded-2xl p-3.5 sm:p-4 shadow-md transition-all flex justify-between gap-3 group relative overflow-hidden select-none active:scale-[0.99]">
+      } rounded-2xl p-4 sm:p-5 shadow-md transition-all flex justify-between gap-3.5 group relative overflow-hidden select-none active:scale-[0.99]">
         
         <div class="flex-1 flex flex-col justify-between min-w-0 pr-1">
           <div>
             <!-- Nombre del Restaurante Predominante -->
-            <div class="flex items-center gap-1.5 text-[11px] font-black text-[#06C167] mb-1 truncate">
-              <span class="text-[10px]">🏪</span>
+            <div class="flex items-center gap-1.5 text-xs font-black text-[#06C167] mb-1 truncate">
+              <span>🏪</span>
               <span class="truncate">${p.restaurant_name || 'Restaurante Asociado'}</span>
             </div>
 
             <!-- Nombre del Plato -->
             <div class="flex items-center gap-1.5 flex-wrap mb-1">
-              <h3 class="font-bold ${isAvailable ? 'text-white group-hover:text-[#06C167]' : 'text-[#757575] line-through'} text-sm sm:text-base leading-snug transition-colors truncate">
+              <h3 class="font-extrabold ${isAvailable ? 'text-white group-hover:text-[#06C167]' : 'text-[#757575] line-through'} text-base sm:text-lg leading-snug transition-colors">
                 ${p.name}
               </h3>
-              ${!isAvailable ? '<span class="text-[10px] font-black uppercase tracking-wider text-rose-400 bg-rose-950/70 border border-rose-800/80 px-2 py-0.5 rounded-md">Agotado</span>' : ''}
+              ${!isAvailable ? '<span class="text-xs font-black uppercase tracking-wider text-rose-400 bg-rose-950/70 border border-rose-800/80 px-2 py-0.5 rounded-md">Agotado</span>' : ''}
             </div>
 
-            <p class="text-xs ${isAvailable ? 'text-[#A6A6A6]' : 'text-[#666666]'} line-clamp-2 leading-relaxed">
+            <p class="text-xs sm:text-sm ${isAvailable ? 'text-[#A6A6A6]' : 'text-[#666666]'} line-clamp-2 leading-relaxed">
               ${p.description || 'Preparado fresco al momento con ingredientes seleccionados.'}
             </p>
           </div>
 
-          <div class="flex items-center gap-2 mt-2 pt-1 flex-wrap">
-            <span class="text-sm sm:text-base font-extrabold ${isAvailable ? 'text-white' : 'text-[#757575]'} font-mono">C$ ${Number(displayPrice).toFixed(2)}</span>
-            ${oldPrice ? `<span class="text-xs text-[#555555] line-through font-mono">C$ ${Number(oldPrice).toFixed(2)}</span>` : ''}
-            ${isPromo && isAvailable ? `<span class="text-[10px] font-bold text-[#06C167] bg-[#06C167]/15 px-1.5 py-0.5 rounded">Ahorro</span>` : ''}
-            ${p.is_combo && isAvailable ? `<span class="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">Combo</span>` : ''}
+          <div class="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-[#1E1E1E] flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-base sm:text-lg font-black ${isAvailable ? 'text-white' : 'text-[#757575]'} font-mono">C$ ${Number(displayPrice).toFixed(2)}</span>
+              ${oldPrice ? `<span class="text-xs text-[#555555] line-through font-mono">C$ ${Number(oldPrice).toFixed(2)}</span>` : ''}
+              ${isPromo && isAvailable ? `<span class="text-[11px] font-bold text-[#06C167] bg-[#06C167]/15 px-2 py-0.5 rounded-lg">Ahorro</span>` : ''}
+              ${p.is_combo && isAvailable ? `<span class="text-[11px] font-bold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-lg">Combo</span>` : ''}
+            </div>
+            ${isAvailable ? `
+              <button onclick="event.stopPropagation(); openProductModal('${p.id}');" class="px-3.5 py-2 min-h-[38px] rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs sm:text-sm flex items-center gap-1 shadow-md active:scale-95 transition-all">
+                <span>+ Agregar</span>
+              </button>
+            ` : ''}
           </div>
         </div>
 
-        <!-- Imagen con Botón Uber Eats -->
-        <div class="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-black shrink-0">
+        <!-- Imagen del Producto -->
+        <div class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-black shrink-0 self-center">
           <img src="${p.image_url || 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300'}" alt="${p.name}" class="w-full h-full object-cover ${isAvailable ? 'group-hover:scale-105' : 'grayscale opacity-40'} transition-transform duration-300" />
           
-          ${isAvailable ? `
-            <button onclick="event.stopPropagation(); openProductModal('${p.id}');" class="absolute bottom-1.5 right-1.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-black font-extrabold text-base flex items-center justify-center shadow-lg hover:bg-[#06C167] hover:text-black transition-colors" title="Agregar">
-              +
-            </button>
-          ` : `
+          ${!isAvailable ? `
             <div class="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center">
-              <span class="text-[9px] font-black tracking-wider uppercase text-rose-300 bg-rose-950/90 px-1.5 py-0.5 rounded border border-rose-800">Agotado</span>
+              <span class="text-xs font-black tracking-wider uppercase text-rose-300 bg-rose-950/90 px-2 py-1 rounded border border-rose-800">Agotado</span>
             </div>
-          `}
+          ` : ''}
         </div>
 
       </div>
@@ -1208,19 +1214,19 @@
     const groups = product.customization_groups || [];
 
     if (groups.length === 0) {
-      container.innerHTML = `<p class="text-xs text-slate-500 italic">Este producto no requiere configuración adicional.</p>`;
+      container.innerHTML = `<p class="text-sm text-slate-400 italic">Este producto no requiere configuración adicional.</p>`;
     } else {
       container.innerHTML = groups.map((g, gIdx) => {
         return `
-          <div class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
+          <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200">${g.title}</span>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+              <span class="text-sm font-extrabold text-white">${g.title}</span>
+              <span class="text-xs font-mono px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold">
                 ${g.type === 'SINGLE' ? 'Elige 1 opción' : (g.type === 'MULTIPLE' ? 'Opcionales' : 'Modificaciones')}
               </span>
             </div>
 
-            <div class="space-y-1.5">
+            <div class="space-y-2">
               ${(g.options || []).map((opt, optIdx) => {
                 const inputName = `opt_group_${gIdx}`;
                 const inputId = `opt_${gIdx}_${optIdx}`;
@@ -1230,8 +1236,8 @@
                 const delta = Number(opt.price_delta) || 0;
 
                 return `
-                  <label for="${inputId}" class="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800/80 cursor-pointer text-xs transition-colors">
-                    <div class="flex items-center gap-2.5">
+                  <label for="${inputId}" class="flex items-center justify-between p-3.5 min-h-[48px] rounded-xl bg-slate-900/70 hover:bg-slate-900 border border-slate-800 cursor-pointer text-sm transition-colors">
+                    <div class="flex items-center gap-3">
                       <input 
                         type="${inputType}" 
                         id="${inputId}" 
@@ -1241,11 +1247,11 @@
                         data-group-title="${g.title}"
                         ${isChecked ? 'checked' : ''} 
                         onchange="recalculateModalPrice()"
-                        class="accent-[#06C167] rounded"
+                        class="w-5 h-5 accent-[#06C167] rounded"
                       />
-                      <span class="text-slate-300 font-medium">${opt.name}</span>
+                      <span class="text-white font-semibold">${opt.name}</span>
                     </div>
-                    ${delta > 0 ? `<span class="text-[11px] font-mono font-bold text-[#06C167]">+C$ ${delta.toFixed(2)}</span>` : ''}
+                    ${delta > 0 ? `<span class="text-xs sm:text-sm font-mono font-black text-[#06C167]">+C$ ${delta.toFixed(2)}</span>` : ''}
                   </label>
                 `;
               }).join('')}
@@ -1501,8 +1507,8 @@
       list.innerHTML = `
         <div class="text-center py-16 text-slate-500">
           <span class="text-4xl block mb-2">🛍️</span>
-          <p class="text-xs font-semibold text-slate-400">Tu carrito está vacío.</p>
-          <p class="text-[11px] text-slate-600 mt-1">Busca platillos o bebidas para comenzar tu orden.</p>
+          <p class="text-sm font-bold text-slate-400">Tu carrito está vacío.</p>
+          <p class="text-xs text-slate-500 mt-1">Busca platillos o bebidas para comenzar tu orden.</p>
         </div>`;
       updateCartUI();
       return;
@@ -1513,19 +1519,19 @@
       const optionsText = item.selected_options.map(o => o.name).join(', ');
 
       return `
-        <div class="p-3 rounded-2xl bg-[#1A1A1A] border border-[#2E2E2E] flex items-center justify-between gap-3">
+        <div class="p-3.5 rounded-2xl bg-[#1A1A1A] border border-[#2E2E2E] flex items-center justify-between gap-3">
           <div class="flex-1 min-w-0">
-            <span class="text-[10px] text-[#06C167] font-bold block truncate">🏪 ${item.restaurant_name}</span>
-            <h4 class="text-xs font-bold text-white truncate">${item.name}</h4>
-            ${optionsText ? `<p class="text-[10px] text-[#A6A6A6] truncate">${optionsText}</p>` : ''}
-            ${item.notes ? `<p class="text-[10px] text-amber-400/80 italic truncate">Nota: "${item.notes}"</p>` : ''}
-            <span class="text-xs font-bold text-white font-mono mt-0.5 block">C$ ${itemTotal.toFixed(2)}</span>
+            <span class="text-xs text-[#06C167] font-extrabold block truncate">🏪 ${item.restaurant_name}</span>
+            <h4 class="text-sm font-extrabold text-white truncate mt-0.5">${item.name}</h4>
+            ${optionsText ? `<p class="text-xs text-[#A6A6A6] truncate">${optionsText}</p>` : ''}
+            ${item.notes ? `<p class="text-xs text-amber-400/90 italic truncate">Nota: "${item.notes}"</p>` : ''}
+            <span class="text-sm font-black text-white font-mono mt-1 block">C$ ${itemTotal.toFixed(2)}</span>
           </div>
 
-          <div class="flex items-center gap-1.5 bg-black border border-[#2E2E2E] rounded-full p-1 shrink-0">
-            <button onclick="updateCartItemQty(${index}, -1)" class="w-6 h-6 rounded-full hover:bg-[#282828] text-white flex items-center justify-center text-xs font-bold">-</button>
-            <span class="w-5 text-center text-xs font-bold font-mono text-white">${item.quantity}</span>
-            <button onclick="updateCartItemQty(${index}, 1)" class="w-6 h-6 rounded-full hover:bg-[#282828] text-white flex items-center justify-center text-xs font-bold">+</button>
+          <div class="flex items-center gap-1.5 bg-black border border-[#2E2E2E] rounded-2xl p-1 shrink-0">
+            <button onclick="updateCartItemQty(${index}, -1)" class="w-9 h-9 rounded-xl bg-[#222222] hover:bg-[#303030] text-white flex items-center justify-center text-base font-black active:scale-95 transition-transform">-</button>
+            <span class="w-7 text-center text-sm font-black font-mono text-white">${item.quantity}</span>
+            <button onclick="updateCartItemQty(${index}, 1)" class="w-9 h-9 rounded-xl bg-[#222222] hover:bg-[#303030] text-white flex items-center justify-center text-base font-black active:scale-95 transition-transform">+</button>
           </div>
         </div>
       `;
@@ -2202,10 +2208,10 @@
     [tabAddresses, tabProfile, tabOrders, tabAuth].forEach(t => { if (t) t.classList.add('hidden'); });
     [btnAddresses, btnProfile, btnOrders, btnAuth].forEach(b => {
       if (!b) return;
-      b.className = 'py-1.5 px-1.5 rounded-lg font-semibold text-[#8A94A6] hover:text-white transition-all truncate';
+      b.className = 'py-2.5 px-2.5 min-h-[42px] rounded-xl font-bold text-[#8A94A6] hover:text-white transition-all truncate';
     });
 
-    const activeBtnClass = 'py-1.5 px-1.5 rounded-lg font-bold bg-[#06C167] text-black transition-all truncate';
+    const activeBtnClass = 'py-2.5 px-2.5 min-h-[42px] rounded-xl font-black bg-[#06C167] text-black transition-all truncate';
 
     if (tab === 'addresses') {
       if (tabAddresses) tabAddresses.classList.remove('hidden');
@@ -2233,9 +2239,9 @@
     if (list.length === 0) {
       container.innerHTML = `
         <div class="p-6 rounded-2xl bg-[#0D0F14] border border-[#262D3B] text-center space-y-2">
-          <span class="text-2xl block">📍</span>
-          <p class="text-xs font-bold text-white">No tienes direcciones guardadas aún</p>
-          <p class="text-[10px] text-[#8A94A6]">Haz clic en "+ Nueva Dirección" para guardar Casa, Oficina o Familia.</p>
+          <span class="text-3xl block">📍</span>
+          <p class="text-sm font-bold text-white">No tienes direcciones guardadas aún</p>
+          <p class="text-xs text-[#8A94A6]">Toca "+ Nueva Dirección" para guardar Casa, Oficina o Familia.</p>
         </div>`;
       return;
     }
@@ -2251,44 +2257,43 @@
     container.innerHTML = list.map(addr => {
       const isDefault = Boolean(addr.is_default);
       return `
-        <div class="p-3 rounded-2xl bg-[#0D0F14] border ${isDefault ? 'border-[#06C167] bg-[#06C167]/5' : 'border-[#262D3B] hover:border-[#06C167]/40'} transition-all space-y-2">
-          <div class="flex items-start justify-between gap-2">
-            <div class="flex items-start gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-xl ${isDefault ? 'bg-[#06C167] text-black' : 'bg-[#161922] text-[#06C167]'} flex items-center justify-center text-base shrink-0 font-bold">
+        <div class="p-4 rounded-2xl bg-[#0D0F14] border-2 ${isDefault ? 'border-[#06C167] bg-[#06C167]/5' : 'border-[#262D3B] hover:border-[#06C167]/40'} transition-all space-y-3">
+          <div class="flex items-start justify-between gap-2.5">
+            <div class="flex items-start gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl ${isDefault ? 'bg-[#06C167] text-black' : 'bg-[#161922] text-[#06C167]'} flex items-center justify-center text-lg shrink-0 font-bold">
                 ${addr.icon || '📍'}
               </div>
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-1.5">
-                  <span class="font-extrabold text-white text-xs">${addr.label || 'Dirección'}</span>
-                  <span class="px-1.5 py-0.5 rounded bg-[#1A1D26] border border-[#262D3B] text-[9px] text-[#8A94A6] font-semibold">${typeLabels[addr.building_type] || 'Domicilio'}</span>
-                  ${addr.zone ? `<span class="px-1.5 py-0.5 rounded bg-[#06C167]/10 border border-[#06C167]/30 text-[9px] text-[#06C167] font-semibold">${addr.zone}</span>` : ''}
-                  ${isDefault ? `<span class="px-2 py-0.5 rounded-full bg-[#06C167]/20 text-[#06C167] border border-[#06C167]/40 text-[9px] font-black">★ Activa / Principal</span>` : ''}
+                  <span class="font-extrabold text-white text-sm sm:text-base">${addr.label || 'Dirección'}</span>
+                  <span class="px-2 py-0.5 rounded-lg bg-[#1A1D26] border border-[#262D3B] text-xs text-[#8A94A6] font-semibold">${typeLabels[addr.building_type] || 'Domicilio'}</span>
+                  ${addr.zone ? `<span class="px-2 py-0.5 rounded-lg bg-[#06C167]/10 border border-[#06C167]/30 text-xs text-[#06C167] font-semibold">${addr.zone}</span>` : ''}
+                  ${isDefault ? `<span class="px-2.5 py-0.5 rounded-full bg-[#06C167]/20 text-[#06C167] border border-[#06C167]/40 text-xs font-black">★ Activa</span>` : ''}
                 </div>
-                <p class="text-[11px] text-white font-medium mt-1 break-words">${addr.address}</p>
-                ${addr.reference ? `<p class="text-[10px] text-[#8A94A6] mt-0.5">📝 Ref: ${addr.reference}</p>` : ''}
-                <div class="flex items-center gap-3 mt-1 text-[10px] text-[#8A94A6] font-mono">
+                <p class="text-xs sm:text-sm text-white font-semibold mt-1 break-words">${addr.address}</p>
+                ${addr.reference ? `<p class="text-xs text-[#8A94A6] mt-0.5">📝 Ref: ${addr.reference}</p>` : ''}
+                <div class="flex items-center gap-3 mt-1.5 text-xs text-[#8A94A6] font-mono">
                   <span>📞 ${addr.recipient_phone || clientUser?.phone || '+505 8888-0000'}</span>
-                  <span>🌐 ${Number(addr.lat || 12.1022).toFixed(4)}, ${Number(addr.lng || -86.2415).toFixed(4)}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-[#1C212D]">
+          <div class="flex items-center justify-end gap-2 pt-2.5 border-t border-[#1C212D] flex-wrap">
             ${!isDefault ? `
-              <button type="button" onclick="selectAddressFromBook('${addr.id}')" class="px-2.5 py-1 rounded-lg bg-[#06C167] hover:bg-[#05A357] text-black font-extrabold text-[10px] transition-all">
+              <button type="button" onclick="selectAddressFromBook('${addr.id}')" class="px-4 py-2.5 min-h-[40px] rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs sm:text-sm transition-all active:scale-95">
                 ✓ Entregar Aquí
               </button>
             ` : `
-              <button type="button" onclick="selectAddressFromBook('${addr.id}')" class="px-2.5 py-1 rounded-lg bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/30 font-bold text-[10px]">
+              <button type="button" onclick="selectAddressFromBook('${addr.id}')" class="px-3.5 py-2 min-h-[40px] rounded-xl bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/30 font-extrabold text-xs sm:text-sm">
                 📍 En uso actualmente
               </button>
             `}
-            <button type="button" onclick="editAddressInBook('${addr.id}')" class="px-2.5 py-1 rounded-lg bg-[#1A1D26] hover:bg-[#252A36] text-white border border-[#2E3545] text-[10px] font-bold">
+            <button type="button" onclick="editAddressInBook('${addr.id}')" class="px-3.5 py-2 min-h-[40px] rounded-xl bg-[#1A1D26] hover:bg-[#252A36] text-white border border-[#2E3545] text-xs sm:text-sm font-bold active:scale-95">
               ✏️ Editar
             </button>
             ${list.length > 1 ? `
-              <button type="button" onclick="deleteAddressFromBook('${addr.id}')" class="px-2 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 text-[10px] font-bold" title="Eliminar dirección">
+              <button type="button" onclick="deleteAddressFromBook('${addr.id}')" class="px-3 py-2 min-h-[40px] rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 text-xs sm:text-sm font-bold active:scale-95" title="Eliminar dirección">
                 🗑️
               </button>
             ` : ''}
@@ -2642,29 +2647,29 @@
         const badgeHtml = statusBadges[ord.status] || `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#262626] text-white">${ord.status}</span>`;
 
         return `
-          <div class="p-3 rounded-2xl bg-[#0D0F14] border border-[#262D3B] hover:border-[#06C167]/40 transition-colors space-y-2">
+          <div class="p-4 rounded-2xl bg-[#0D0F14] border border-[#262D3B] hover:border-[#06C167]/40 transition-colors space-y-2.5">
             <div class="flex items-start justify-between gap-2">
               <div>
-                <div class="flex items-center gap-2">
-                  <span class="font-bold text-white text-xs">🏪 ${restName}</span>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-extrabold text-white text-sm">🏪 ${restName}</span>
                   ${badgeHtml}
                 </div>
-                <div class="text-[10px] text-[#8A94A6] mt-0.5 font-mono">#${ord.id.slice(0, 8).toUpperCase()} • ${dateStr}</div>
+                <div class="text-xs text-[#8A94A6] mt-0.5 font-mono">#${ord.id.slice(0, 8).toUpperCase()} • ${dateStr}</div>
               </div>
               <div class="text-right">
-                <span class="font-bold text-[#06C167] font-mono text-xs">C$ ${total}</span>
+                <span class="font-black text-[#06C167] font-mono text-sm">C$ ${total}</span>
               </div>
             </div>
 
-            <p class="text-[11px] text-[#A6A6A6] truncate">${itemsSummary}</p>
+            <p class="text-xs sm:text-sm text-[#A6A6A6] truncate">${itemsSummary}</p>
 
-            <div class="flex items-center justify-end gap-2 pt-1 border-t border-[#1C212D]">
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-[#1C212D]">
               ${isActive ? `
-                <button type="button" onclick="toggleTrackingView(true, '${ord.id}'); closeClientProfileModal();" class="px-3 py-1 rounded-xl bg-[#06C167]/15 hover:bg-[#06C167]/25 text-[#06C167] border border-[#06C167]/30 text-[11px] font-bold transition-colors">
+                <button type="button" onclick="toggleTrackingView(true, '${ord.id}'); closeClientProfileModal();" class="px-4 py-2 min-h-[40px] rounded-xl bg-[#06C167]/15 hover:bg-[#06C167]/25 text-[#06C167] border border-[#06C167]/30 text-xs sm:text-sm font-black transition-all active:scale-95">
                   📍 Ver Tracking
                 </button>
               ` : ''}
-              <button type="button" onclick="reorderPastOrder('${ord.id}')" class="px-3 py-1 rounded-xl bg-[#1A1D26] hover:bg-[#252A36] text-white border border-[#2E3545] text-[11px] font-bold transition-colors">
+              <button type="button" onclick="reorderPastOrder('${ord.id}')" class="px-4 py-2 min-h-[40px] rounded-xl bg-[#1A1D26] hover:bg-[#252A36] text-white border border-[#2E3545] text-xs sm:text-sm font-extrabold transition-all active:scale-95">
                 🔄 Pedir de Nuevo
               </button>
             </div>
