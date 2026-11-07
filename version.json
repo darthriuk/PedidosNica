@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "versionCode": 1,
+  "tag": "v1.0.0",
+  "releasedAt": "2026-11-07T05:45:10.652Z",
+  "repo": "darthriuk/PedidosNica",
+  "lanUrl": "http://192.168.1.20:3000",
+  "tunnelUrl": "https://1de3b77b254e8b.lhr.life",
+  "changelog": "Lanzamiento oficial v1.0.0: 3 aplicaciones Android independientes (PedidosNica Cliente, Repartidor y Restaurante), sistema IAM/RBAC, recuperación de contraseña multicanal, multi-direcciones, iconografía monocromática #06C167 y detector de auto-actualización conectado a GitHub Releases.",
+  "assets": {
+    "client": "https://github.com/darthriuk/PedidosNica/releases/latest/download/PedidosNica-Cliente.apk",
+    "driver": "https://github.com/darthriuk/PedidosNica/releases/latest/download/PedidosNica-Repartidor.apk",
+    "restaurant": "https://github.com/darthriuk/PedidosNica/releases/latest/download/PedidosNica-Restaurante.apk"
+  }
+}

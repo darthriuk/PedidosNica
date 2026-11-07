@@ -1,0 +1,81 @@
+import groovy.json.JsonSlurper
+
+plugins {
+    id 'com.android.application'
+}
+
+def versionFile = file("../../version.json")
+def versionJson = versionFile.exists() ? new JsonSlurper().parseText(versionFile.text) : [version: "1.0.0", versionCode: 1, lanUrl: "http://192.168.1.20:3000", tunnelUrl: "https://1de3b77b254e8b.lhr.life"]
+
+android {
+    namespace 'com.pedidosnica.app'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+        targetSdk 34
+        versionCode (versionJson.versionCode ?: 1) as int
+        versionName (versionJson.version ?: "1.0.0") as String
+
+        buildConfigField "String", "GITHUB_REPO", "\"darthriuk/PedidosNica\""
+        buildConfigField "String", "DEFAULT_LAN_URL", "\"${versionJson.lanUrl ?: 'http://192.168.1.20:3000'}\""
+        buildConfigField "String", "DEFAULT_TUNNEL_URL", "\"${versionJson.tunnelUrl ?: 'https://1de3b77b254e8b.lhr.life'}\""
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("pedidosnica-release.keystore")
+            storePassword "pedidosnica2026"
+            keyAlias "pedidosnica"
+            keyPassword "pedidosnica2026"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    flavorDimensions "portal"
+    productFlavors {
+        client {
+            dimension "portal"
+            applicationId "com.pedidosnica.client"
+            resValue "string", "app_name", "PedidosNica Cliente"
+            buildConfigField "String", "PORTAL_PATH", "\"/client\""
+            buildConfigField "String", "APK_ASSET_NAME", "\"PedidosNica-Cliente.apk\""
+            buildConfigField "String", "APP_ROLE_TITLE", "\"PedidosNica Cliente\""
+        }
+        driver {
+            dimension "portal"
+            applicationId "com.pedidosnica.driver"
+            resValue "string", "app_name", "PedidosNica Repartidor"
+            buildConfigField "String", "PORTAL_PATH", "\"/driver\""
+            buildConfigField "String", "APK_ASSET_NAME", "\"PedidosNica-Repartidor.apk\""
+            buildConfigField "String", "APP_ROLE_TITLE", "\"PedidosNica Repartidor\""
+        }
+        restaurant {
+            dimension "portal"
+            applicationId "com.pedidosnica.restaurant"
+            resValue "string", "app_name", "PedidosNica Restaurante"
+            buildConfigField "String", "PORTAL_PATH", "\"/restaurant\""
+            buildConfigField "String", "APK_ASSET_NAME", "\"PedidosNica-Restaurante.apk\""
+            buildConfigField "String", "APP_ROLE_TITLE", "\"PedidosNica Restaurante\""
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

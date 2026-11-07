@@ -1,0 +1,78 @@
+name: Build Android APKs & Publish GitHub Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle 8.5
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      - name: Compile Client, Driver & Restaurant APKs
+        working-directory: android-apps
+        run: |
+          gradle assembleRelease --no-daemon
+
+      - name: Prepare Release Artifacts
+        id: meta
+        run: |
+          mkdir -p dist
+          cp android-apps/app/build/outputs/apk/client/release/*.apk dist/PedidosNica-Cliente.apk
+          cp android-apps/app/build/outputs/apk/driver/release/*.apk dist/PedidosNica-Repartidor.apk
+          cp android-apps/app/build/outputs/apk/restaurant/release/*.apk dist/PedidosNica-Restaurante.apk
+          cp version.json dist/version.json
+
+          VERSION=$(node -p "require('./version.json').version")
+          TAG=$(node -p "require('./version.json').tag || ('v' + require('./version.json').version)")
+          CHANGELOG=$(node -p "require('./version.json').changelog || 'Actualización automática PedidosNica'")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          ls -lh dist/
+
+      - name: Publish or Update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          VERSION="${{ steps.meta.outputs.version }}"
+          NOTES=$(node -p "require('./version.json').changelog")
+
+          BODY="## 🚀 PedidosNica Ecosystem — Release $TAG
+
+          $NOTES
+
+          ### 📲 Descarga Directa de Aplicaciones Android (.APK)
+          - **🍔 App de Clientes (Comensales):** \`PedidosNica-Cliente.apk\` (\`com.pedidosnica.client\`)
+          - **🛵 App de Repartidores (Drivers):** \`PedidosNica-Repartidor.apk\` (\`com.pedidosnica.driver\`)
+          - **🏪 Suite de Restaurante (KDS & Menú):** \`PedidosNica-Restaurante.apk\` (\`com.pedidosnica.restaurant\`)
+
+          > Todas las aplicaciones detectan automáticamente nuevas versiones publicadas en este repositorio y permiten actualizar en 1 toque."
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/PedidosNica-Cliente.apk dist/PedidosNica-Repartidor.apk dist/PedidosNica-Restaurante.apk dist/version.json --clobber
+            gh release edit "$TAG" --title "PedidosNica $TAG (Cliente, Repartidor y Restaurante)" --notes "$BODY"
+          else
+            gh release create "$TAG" dist/PedidosNica-Cliente.apk dist/PedidosNica-Repartidor.apk dist/PedidosNica-Restaurante.apk dist/version.json --title "PedidosNica $TAG (Cliente, Repartidor y Restaurante)" --notes "$BODY" --latest
+          fi
