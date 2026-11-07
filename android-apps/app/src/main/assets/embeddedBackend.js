@@ -3,6 +3,7 @@
   // PEDIDOSNICA EMBEDDED LOCAL BUILD ENGINE (100% STANDALONE + LAN SYNC)
   // ============================================================================
   const nativeFetch = window.fetch.bind(window);
+  globalThis._nativeFetch = nativeFetch;
   const LAN_SERVER = "http://192.168.1.20:3000";
   let lanServerOnline = false;
 
@@ -585,13 +586,157 @@ const reviews = [
   }
 ];
 
+// ============================================================================
+// SINCRONIZACIÓN BIDIRECCIONAL EN VIVO CON SUPABASE CLOUD (CUALQUIER RED 4G/WIFI)
+// ============================================================================
+const SUPABASE_URL = 'https://zciujeihkvleehhqbeat.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjaXVqZWloa3ZsZWVoaHFiZWF0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDEyODIzMywiZXhwIjoyMTA1NzA0MjMzfQ.JohwsGaIH0JTkjEI7SSkFeWxibbpAQTvH4gHLMNSeTY';
+const CLOUD_STATE_KEY = 'ecosystem_cloud_state_v1';
+
+let isSyncing = false;
+let lastCloudTimestamp = 0;
+
+function mergeById(targetArray, incomingArray) {
+  if (!Array.isArray(incomingArray) || incomingArray.length === 0) return;
+  const map = new Map();
+  targetArray.forEach(item => {
+    if (item && item.id) map.set(item.id, item);
+  });
+  incomingArray.forEach(item => {
+    if (item && item.id) {
+      const prev = map.get(item.id) || {};
+      map.set(item.id, Object.assign({}, prev, item));
+    }
+  });
+  const merged = Array.from(map.values());
+  targetArray.splice(0, targetArray.length, ...merged);
+}
+
+async function sbFetch(endpoint, options = {}) {
+  const f = typeof globalThis._nativeFetch === 'function' ? globalThis._nativeFetch : fetch;
+  const headers = Object.assign({
+    'apikey': SUPABASE_SERVICE_ROLE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    'Content-Type': 'application/json'
+  }, options.headers || {});
+  const res = await f(`${SUPABASE_URL}/rest/v1/${endpoint}`, Object.assign({}, options, { headers }));
+  if (!res.ok) {
+    throw new Error(`Supabase ${endpoint} HTTP ${res.status}`);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function pullFromSupabase() {
+  if (isSyncing) return false;
+  isSyncing = true;
+  try {
+    // 1. Leer estado unificado cloud (platform_settings) y tablas relacionales de Supabase en paralelo
+    const [cloudRows, sbRestaurants, sbProducts, sbOrders, sbReviews] = await Promise.all([
+      sbFetch(`platform_settings?key=eq.${CLOUD_STATE_KEY}&select=value,updated_at`).catch(() => []),
+      sbFetch('restaurants?select=*').catch(() => []),
+      sbFetch('products?select=*').catch(() => []),
+      sbFetch('orders?select=*,order_items(*)&order=created_at.desc&limit=50').catch(() => []),
+      sbFetch('restaurant_reviews?select=*').catch(() => [])
+    ]);
+
+    // 2. Integrar restaurantes y productos reales de las tablas de Supabase (ej. Valentis Pizza, Tip top, Pizza Culona)
+    if (Array.isArray(sbRestaurants) && sbRestaurants.length > 0) {
+      const normalizedRests = sbRestaurants.map(r => Object.assign({
+        delivery_fee: 60.00,
+        delivery_radius_km: 7.0,
+        estimated_prep_time_minutes: 20,
+        commission_rate: 15.0,
+        is_active: true,
+        rating: 5.0
+      }, r));
+      mergeById(restaurants, normalizedRests);
+    }
+
+    if (Array.isArray(sbProducts) && sbProducts.length > 0) {
+      mergeById(products, sbProducts);
+    }
+
+    if (Array.isArray(sbOrders) && sbOrders.length > 0) {
+      const normalizedOrders = sbOrders.map(o => {
+        const items = Array.isArray(o.order_items) ? o.order_items : (Array.isArray(o.items) ? o.items : []);
+        return Object.assign({}, o, { items, order_items: items });
+      });
+      mergeById(orders, normalizedOrders);
+    }
+
+    if (Array.isArray(sbReviews) && sbReviews.length > 0) {
+      mergeById(reviews, sbReviews);
+    }
+
+    // 3. Integrar el snapshot cloud más reciente (usuarios IAM, multi-direcciones, estados en vivo de pedidos)
+    if (Array.isArray(cloudRows) && cloudRows.length > 0 && cloudRows[0].value) {
+      const cloudVal = cloudRows[0].value;
+      if (Array.isArray(cloudVal.restaurants)) mergeById(restaurants, cloudVal.restaurants);
+      if (Array.isArray(cloudVal.users)) mergeById(users, cloudVal.users);
+      if (Array.isArray(cloudVal.products)) mergeById(products, cloudVal.products);
+      if (Array.isArray(cloudVal.orders)) mergeById(orders, cloudVal.orders);
+      if (Array.isArray(cloudVal.reviews)) mergeById(reviews, cloudVal.reviews);
+      if (cloudVal.updatedAt) lastCloudTimestamp = cloudVal.updatedAt;
+    }
+
+    return true;
+  } catch (_) {
+    return false;
+  } finally {
+    isSyncing = false;
+  }
+}
+
+async function pushToSupabase() {
+  try {
+    const nowTs = Date.now();
+    lastCloudTimestamp = nowTs;
+    const payload = [{
+      key: CLOUD_STATE_KEY,
+      value: {
+        updatedAt: nowTs,
+        restaurants,
+        users,
+        products,
+        orders,
+        reviews
+      },
+      updated_at: new Date(nowTs).toISOString()
+    }];
+
+    await sbFetch('platform_settings?on_conflict=key', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(payload)
+    });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+// Iniciar sincronización automática con Supabase Cloud
+pullFromSupabase().then((ok) => {
+  if (ok) {
+    pushToSupabase();
+  }
+});
+setInterval(() => {
+  pullFromSupabase();
+}, 4000);
+
 module.exports = {
   restaurants,
   users,
   products,
   orders,
   reviews,
-  recoveryTokens
+  recoveryTokens,
+  pullFromSupabase,
+  pushToSupabase,
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY
 };
 
   };
@@ -2846,6 +2991,9 @@ module.exports = {
   const sseListeners = new Set();
   function broadcastEvent(typeOrObj, payload) {
     persistLocalStore();
+    if (localStore && typeof localStore.pushToSupabase === 'function') {
+      localStore.pushToSupabase();
+    }
     let eventData;
     if (typeof typeOrObj === 'object' && typeOrObj !== null) {
       eventData = Object.assign({}, typeOrObj, { timestamp: Date.now() });
@@ -2857,6 +3005,10 @@ module.exports = {
       try { fn({ data: str }); } catch (_) {}
     });
   }
+
+  let initialCloudPullPromise = (localStore && typeof localStore.pullFromSupabase === 'function')
+    ? localStore.pullFromSupabase().catch(() => false)
+    : Promise.resolve(false);
 
   // Mock de EventSource para /api/live-stream cuando corre en modo local
   const NativeEventSource = window.EventSource;
@@ -2891,8 +3043,8 @@ module.exports = {
   window.fetch = async function(input, init) {
     const rawUrl = typeof input === 'string' ? input : (input && input.url ? input.url : String(input));
 
-    // Si estamos dentro del handler local y éste intenta llamar a Supabase caído o localhost:4000, rechazar en 0ms para usar localStore
-    if (inEmbeddedHandler && (rawUrl.includes('zciujeihkvleehhqbeat.supabase.co') || rawUrl.includes('localhost:4000'))) {
+    // Si estamos dentro del handler local y éste intenta llamar a localhost:4000, rechazar en 0ms
+    if (inEmbeddedHandler && rawUrl.includes('localhost:4000')) {
       throw new Error('Embedded local mode bypass');
     }
 
@@ -2908,6 +3060,12 @@ module.exports = {
       return nativeFetch(input, init);
     }
 
+    // Asegurar sincronización inicial con Supabase Cloud (https://zciujeihkvleehhqbeat.supabase.co)
+    if (initialCloudPullPromise) {
+      try { await initialCloudPullPromise; } catch (_) {}
+      initialCloudPullPromise = null;
+    }
+
     // 1. Si el servidor LAN de la PC está alcanzable en la misma red Wi-Fi, sincronizar con él
     if (lanServerOnline) {
       try {
@@ -2920,7 +3078,7 @@ module.exports = {
       }
     }
 
-    // 2. Ejecutar el endpoint /api/... 100% localmente dentro del APK
+    // 2. Ejecutar el endpoint /api/... localmente sincronizado con Supabase Cloud
     const method = (init && init.method ? init.method : 'GET').toUpperCase();
     const bodyText = init && init.body ? (typeof init.body === 'string' ? init.body : JSON.stringify(init.body)) : '';
     const cleanUrl = apiPath.split('?')[0];
@@ -2955,6 +3113,9 @@ module.exports = {
           if (finished) return;
           finished = true;
           persistLocalStore();
+          if (method !== 'GET' && localStore && typeof localStore.pushToSupabase === 'function') {
+            localStore.pushToSupabase();
+          }
           const outStr = typeof payload === 'string' ? payload : (payload ? String(payload) : '{}');
           resolve(new Response(outStr, { status: statusCode, headers: resHeaders }));
         }

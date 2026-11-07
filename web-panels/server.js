@@ -1387,6 +1387,9 @@ function renderFares() {
 // Sistema de Difusión en Tiempo Real (Server-Sent Events para Sincronización Inmediata)
 const sseClients = new Set();
 function broadcastEvent(typeOrObj, payload) {
+  if (localStore && typeof localStore.pushToSupabase === 'function') {
+    localStore.pushToSupabase().catch(() => {});
+  }
   let eventData;
   if (typeof typeOrObj === 'object' && typeOrObj !== null) {
     eventData = { ...typeOrObj, timestamp: Date.now() };

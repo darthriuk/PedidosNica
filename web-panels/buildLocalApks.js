@@ -20,6 +20,7 @@ function buildEmbeddedBackendJs(lanBaseUrl = 'http://192.168.1.20:3000') {
   // PEDIDOSNICA EMBEDDED LOCAL BUILD ENGINE (100% STANDALONE + LAN SYNC)
   // ============================================================================
   const nativeFetch = window.fetch.bind(window);
+  globalThis._nativeFetch = nativeFetch;
   const LAN_SERVER = ${JSON.stringify(lanBaseUrl)};
   let lanServerOnline = false;
 
@@ -127,6 +128,9 @@ ${restaurantApiSrc}
   const sseListeners = new Set();
   function broadcastEvent(typeOrObj, payload) {
     persistLocalStore();
+    if (localStore && typeof localStore.pushToSupabase === 'function') {
+      localStore.pushToSupabase();
+    }
     let eventData;
     if (typeof typeOrObj === 'object' && typeOrObj !== null) {
       eventData = Object.assign({}, typeOrObj, { timestamp: Date.now() });
@@ -138,6 +142,10 @@ ${restaurantApiSrc}
       try { fn({ data: str }); } catch (_) {}
     });
   }
+
+  let initialCloudPullPromise = (localStore && typeof localStore.pullFromSupabase === 'function')
+    ? localStore.pullFromSupabase().catch(() => false)
+    : Promise.resolve(false);
 
   // Mock de EventSource para /api/live-stream cuando corre en modo local
   const NativeEventSource = window.EventSource;
@@ -172,8 +180,8 @@ ${restaurantApiSrc}
   window.fetch = async function(input, init) {
     const rawUrl = typeof input === 'string' ? input : (input && input.url ? input.url : String(input));
 
-    // Si estamos dentro del handler local y éste intenta llamar a Supabase caído o localhost:4000, rechazar en 0ms para usar localStore
-    if (inEmbeddedHandler && (rawUrl.includes('zciujeihkvleehhqbeat.supabase.co') || rawUrl.includes('localhost:4000'))) {
+    // Si estamos dentro del handler local y éste intenta llamar a localhost:4000, rechazar en 0ms
+    if (inEmbeddedHandler && rawUrl.includes('localhost:4000')) {
       throw new Error('Embedded local mode bypass');
     }
 
@@ -189,6 +197,12 @@ ${restaurantApiSrc}
       return nativeFetch(input, init);
     }
 
+    // Asegurar sincronización inicial con Supabase Cloud (https://zciujeihkvleehhqbeat.supabase.co)
+    if (initialCloudPullPromise) {
+      try { await initialCloudPullPromise; } catch (_) {}
+      initialCloudPullPromise = null;
+    }
+
     // 1. Si el servidor LAN de la PC está alcanzable en la misma red Wi-Fi, sincronizar con él
     if (lanServerOnline) {
       try {
@@ -201,7 +215,7 @@ ${restaurantApiSrc}
       }
     }
 
-    // 2. Ejecutar el endpoint /api/... 100% localmente dentro del APK
+    // 2. Ejecutar el endpoint /api/... localmente sincronizado con Supabase Cloud
     const method = (init && init.method ? init.method : 'GET').toUpperCase();
     const bodyText = init && init.body ? (typeof init.body === 'string' ? init.body : JSON.stringify(init.body)) : '';
     const cleanUrl = apiPath.split('?')[0];
@@ -236,6 +250,9 @@ ${restaurantApiSrc}
           if (finished) return;
           finished = true;
           persistLocalStore();
+          if (method !== 'GET' && localStore && typeof localStore.pushToSupabase === 'function') {
+            localStore.pushToSupabase();
+          }
           const outStr = typeof payload === 'string' ? payload : (payload ? String(payload) : '{}');
           resolve(new Response(outStr, { status: statusCode, headers: resHeaders }));
         }
