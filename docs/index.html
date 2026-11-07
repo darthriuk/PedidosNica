@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <script src="embeddedBackend.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Central Hub | App Manager & Gestión de Usuarios | PedidosNica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            uber: {
+              green: '#06C167',
+              greenHover: '#05A357',
+              greenLight: 'rgba(6, 193, 103, 0.12)',
+              black: '#000000',
+              dark: '#121212',
+              card: '#1C1C1C',
+              surface: '#242424',
+              border: '#2E2E2E',
+              subtext: '#A6A6A6',
+              light: '#F6F6F6'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta name="theme-color" content="#06C167">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PedidosNica">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        Promise.resolve().catch(function() {});
+      });
+    }
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const btn = document.getElementById('floatingInstallBtn');
+      if (btn) btn.classList.remove('hidden');
+    });
+    window.triggerPWAInstall = function() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(() => {
+          deferredInstallPrompt = null;
+          const btn = document.getElementById('floatingInstallBtn');
+          if (btn) btn.classList.add('hidden');
+        });
+      } else {
+        alert("Para instalar en tu teléfono:
+Toca el menú de 3 puntos (⋮) en la esquina superior de Chrome y selecciona 'Instalar aplicación' o 'Agregar a la pantalla principal'.");
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #000000;
+      color: #FFFFFF;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Estilos de scrollbar suave */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #121212;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2E2E2E;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06C167;
+    }
+    /* Estilos de Impresión para Ticket Térmico de Cocina (80mm) */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printableThermalTicket, #printableThermalTicket * {
+        visibility: visible !important;
+      }
+      #printableThermalTicket {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 78mm !important;
+        max-width: 80mm !important;
+        margin: 0 !important;
+        padding: 3mm !important;
+        background: white !important;
+        color: black !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      #printableThermalTicket .no-print {
+        display: none !important;
+      }
+    }
+
+    /* ===================================================================== */
+    /* SISTEMA GLOBAL DE ICONOGRAFÍA MONOCROMÁTICA UNIFORME (#06C167)        */
+    /* ===================================================================== */
+    .pn-uni-icon {
+      display: inline-block;
+      width: 1.1em;
+      height: 1.1em;
+      vertical-align: -0.18em;
+      color: #06C167 !important;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    /* Contraste uniforme cuando el icono está dentro de un botón verde activo */
+    .bg-[#06C167] .pn-uni-icon,
+    button.bg-[#06C167] .pn-uni-icon,
+    a.bg-[#06C167] .pn-uni-icon,
+    .text-black > .pn-uni-icon,
+    .text-black .pn-uni-icon {
+      color: #000000 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-black text-white antialiased selection:bg-[#06C167] selection:text-black">
+  
+  <!-- ACCESO RESTRINGIDO - GATEWAY DEL APP MANAGER -->
+  <div id="managerAccessGate" class="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-2 bg-[#06C167]/10 text-[#06C167] border border-[#06C167]/30 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase">
+        <span class="w-2 h-2 rounded-full bg-[#06C167] animate-pulse"></span>
+        Seguridad de Plataforma • Acceso Restringido
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-black text-white mt-4 tracking-tight">
+        Central Hub — Consola del App Manager
+      </h1>
+      <p class="text-xs sm:text-sm text-[#A6A6A6] mt-2 max-w-xl mx-auto">
+        Esta consola central gestiona los usuarios y roles (RBAC), comisiones de la red, Torre de Control de toda la flota y configuración global. <strong class="text-white">Uso reservado exclusivamente para el Administrador de la Plataforma</strong>.
+      </p>
+    </div>
+
+    <!-- TARJETA DESTACADA DE ACCESO MÓVIL (RED LOCAL WI-FI + TÚNEL QR) -->
+    <div class="mb-8 p-5 rounded-3xl bg-[#121212] border-2 border-[#06C167]/40 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="space-y-1.5 text-center md:text-left">
+        <div class="inline-flex items-center gap-2 text-xs font-black text-[#06C167] uppercase tracking-wider">
+          <span>📲</span> Acceso en Vivo desde tu Teléfono
+        </div>
+        <h3 class="text-base font-black text-white">¿Quieres abrir las Apps en tu Celular?</h3>
+        <p class="text-xs text-[#A6A6A6] max-w-xl leading-relaxed">
+          En tu teléfono no escribas <code class="text-white font-mono bg-black px-1.5 py-0.5 rounded">localhost</code>. Entra usando la IP local de tu PC en Wi-Fi (<code class="text-[#06C167] font-mono font-bold">http://192.168.1.20:3000</code>) o el Túnel HTTPS Universal (<code class="text-[#06C167] font-mono font-bold">https://1de3b77b254e8b.lhr.life</code>).
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-2 shrink-0">
+        <button onclick="window.openMobileAccessModal('lan')" class="px-4 py-2.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs transition-all flex items-center gap-1.5 shadow-lg shadow-[#06C167]/20">
+          <span>📲</span> Ver Códigos QR (Wi-Fi Local)
+        </button>
+        <button onclick="window.openMobileAccessModal('tunnel')" class="px-4 py-2.5 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-white border border-[#06C167]/40 font-bold text-xs transition-all flex items-center gap-1.5">
+          <span>⚡</span> QR Túnel Anti-Bloqueo
+        </button>
+      </div>
+    </div>
+
+    <!-- AVISO CUANDO UN RESTAURANTE O DRIVER INTENTA ENTRAR -->
+    <div id="nonManagerRoleNotice" class="hidden mb-6 p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/40 text-amber-300 text-xs flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl">
+      <div class="flex items-center gap-2.5">
+        <span class="text-2xl">⚠️</span>
+        <div>
+          <p class="font-bold text-white text-sm">Acceso No Permitido a la Consola Global</p>
+          <p class="text-amber-200/90 text-xs mt-0.5">Tu cuenta actual tiene rol de <strong id="detectedRoleName" class="underline text-white font-bold">Restaurante</strong>. Como Administrador de Restaurante o Repartidor, no puedes ver la Torre de Control ni la consola del Manager.</p>
+        </div>
+      </div>
+      <button onclick="logoutAppManager()" class="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 font-bold text-xs shrink-0 transition-all">
+        Cerrar Sesión Actual
+      </button>
+    </div>
+
+    <!-- CUADRÍCULA DE PORTALES DEDICADOS PARA OTROS ROLES -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      
+      <!-- Card Restaurante -->
+      <a href="/restaurant" class="p-5 rounded-2xl bg-[#121212] border border-[#262626] hover:border-[#06C167] transition-all group flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="p-2.5 rounded-xl bg-[#1C1C1C] text-2xl group-hover:scale-110 transition-transform">🏪</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1F1F1F] text-[#A6A6A6]">Admin / Cocina</span>
+          </div>
+          <h3 class="text-sm font-bold text-white group-hover:text-[#06C167] transition-colors">Portal de Restaurante</h3>
+          <p class="text-[11px] text-[#8A94A6] mt-1">Acceso para dueños (configuración) y cocineros (comandas KDS).</p>
+        </div>
+        <span class="text-xs font-bold text-[#06C167] mt-4 flex items-center gap-1">Entrar a Restaurante →</span>
+      </a>
+
+      <!-- Card Driver -->
+      <a href="/driver" class="p-5 rounded-2xl bg-[#121212] border border-[#262626] hover:border-[#06C167] transition-all group flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="p-2.5 rounded-xl bg-[#1C1C1C] text-2xl group-hover:scale-110 transition-transform">🛵</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1F1F1F] text-[#A6A6A6]">Repartidores</span>
+          </div>
+          <h3 class="text-sm font-bold text-white group-hover:text-[#06C167] transition-colors">App de Repartidor</h3>
+          <p class="text-[11px] text-[#8A94A6] mt-1">Radar en tiempo real, bolsa de pedidos de zona y navegación GPS.</p>
+        </div>
+        <span class="text-xs font-bold text-[#06C167] mt-4 flex items-center gap-1">Entrar a Driver App →</span>
+      </a>
+
+      <!-- Card Cliente -->
+      <a href="/client" class="p-5 rounded-2xl bg-[#121212] border border-[#262626] hover:border-[#06C167] transition-all group flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="p-2.5 rounded-xl bg-[#1C1C1C] text-2xl group-hover:scale-110 transition-transform">🍔</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1F1F1F] text-[#A6A6A6]">Comensales</span>
+          </div>
+          <h3 class="text-sm font-bold text-white group-hover:text-[#06C167] transition-colors">App de Clientes</h3>
+          <p class="text-[11px] text-[#8A94A6] mt-1">Catálogo de comidas, pedidos online y live tracking con MapLibre.</p>
+        </div>
+        <span class="text-xs font-bold text-[#06C167] mt-4 flex items-center gap-1">Entrar a Clientes →</span>
+      </a>
+
+    </div>
+
+    <!-- FORMULARIO DE ACCESO EXCLUSIVO APP MANAGER -->
+    <div class="max-w-md mx-auto bg-[#121212] border-2 border-[#06C167]/40 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+      <div class="text-center space-y-1">
+        <span class="text-3xl">🛡️</span>
+        <h2 class="text-lg font-black text-white">Ingreso de App Manager</h2>
+        <p class="text-xs text-[#8A94A6]">Introduce tus credenciales de Super Administrador para desbloquear el Hub.</p>
+      </div>
+
+      <form onsubmit="event.preventDefault(); window.loginAsManager(document.getElementById('managerEmailInput').value, document.getElementById('managerPasswordInput').value);" class="space-y-3.5 pt-2">
+        <div>
+          <label class="block text-[11px] uppercase font-bold text-[#8A94A6] mb-1">Correo Electrónico</label>
+          <input type="email" id="managerEmailInput" value="manager@pedidosnica.com" required class="w-full bg-[#181D26] border border-[#2B3444] focus:border-[#06C167] rounded-xl px-3.5 py-2.5 text-xs text-white outline-none" />
+        </div>
+        <div>
+          <label class="block text-[11px] uppercase font-bold text-[#8A94A6] mb-1">Contraseña</label>
+          <input type="password" id="managerPasswordInput" value="Password123!" required class="w-full bg-[#181D26] border border-[#2B3444] focus:border-[#06C167] rounded-xl px-3.5 py-2.5 text-xs text-white outline-none" />
+        </div>
+        <button type="submit" class="w-full py-3 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#06C167]/20 flex items-center justify-center gap-2">
+          <span>🔓</span> Iniciar Sesión como App Manager
+        </button>
+      </form>
+
+      <div class="pt-2 border-t border-[#222938] text-center">
+        <button onclick="quickDemoManagerLogin()" class="text-xs text-[#06C167] font-bold hover:underline flex items-center justify-center gap-1 mx-auto">
+          <span>⚡</span> Acceso Rápido Demo: Carlos Ortega (App Manager)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENIDO COMPLETO DEL HUB (VISIBLE ÚNICAMENTE PARA SUPER_ADMIN) -->
+  <div id="managerHubContent" class="hidden max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
+    
+    <!-- TOPBAR PRIVADA DEL APP MANAGER -->
+    <div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-[#141720] border border-[#252E3E] rounded-2xl shadow-xl">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/30 flex items-center justify-center text-xl">
+          🛡️
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-bold text-white" id="managerDisplayName">Carlos Ortega</h2>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-[#06C167] text-black">SUPER_ADMIN</span>
+          </div>
+          <p class="text-[11px] text-[#8A94A6] font-mono">manager@pedidosnica.com • Director de Operaciones & IAM</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="#iamSection" class="px-3.5 py-2 rounded-xl bg-[#06C167]/15 hover:bg-[#06C167]/25 text-[#06C167] border border-[#06C167]/30 text-xs font-bold transition-all flex items-center gap-1.5">
+          <span>👥</span> Gestión de Usuarios (<span id="topCountUsers">0</span>)
+        </a>
+        <a href="/admin/control-tower" class="px-3.5 py-2 rounded-xl bg-[#1E2532] hover:bg-[#2A3446] text-white border border-[#2E3A4E] text-xs font-bold transition-all flex items-center gap-1.5">
+          <span>📡</span> Torre de Control GPS
+        </a>
+        <a href="/admin/fares" class="px-3.5 py-2 rounded-xl bg-[#1E2532] hover:bg-[#2A3446] text-white border border-[#2E3A4E] text-xs font-bold transition-all flex items-center gap-1.5">
+          <span>⚙️</span> Tarifas & Geocercas
+        </a>
+        <button onclick="logoutAppManager()" class="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all flex items-center gap-1.5">
+          <span>🚪</span> Cerrar Sesión
+        </button>
+      </div>
+    </div>
+
+    <header class="text-center">
+      <div class="inline-flex items-center gap-2 bg-[#06C167]/10 text-[#06C167] border border-[#06C167]/30 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase">
+        <span class="w-2 h-2 rounded-full bg-[#06C167] animate-pulse"></span>
+        Consola Global Centralizada • App Manager
+      </div>
+      <div class="flex items-center justify-center gap-1.5 mt-3">
+        <span class="font-extrabold text-3xl sm:text-4xl tracking-tighter text-white">Pedidos</span>
+        <span class="font-black text-3xl sm:text-4xl tracking-tighter text-[#06C167]">Nica</span>
+        <span class="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#A6A6A6] bg-[#1F1F1F] px-2.5 py-1 rounded-lg border border-[#2E2E2E] ml-2">Manager Hub</span>
+      </div>
+      <p class="text-[#A6A6A6] text-xs sm:text-sm mt-2 max-w-xl mx-auto">
+        Panel administrativo exclusivo para gestionar identidades y roles de usuarios, supervisar restaurantes afiliados, flota de motorizados y parámetros de rentabilidad.
+      </p>
+    </header>
+
+    <!-- ====================================================================== -->
+    <!-- NUEVO MÓDULO TOP: CENTRO DE GESTIÓN DE USUARIOS, ROLES Y ACCESOS (IAM) -->
+    <!-- ====================================================================== -->
+    <section id="iamSection" class="bg-[#121212] border-2 border-[#06C167]/40 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#242B38]">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#06C167]/20 text-[#06C167] border border-[#06C167]/40">
+              IAM & RBAC En Vivo
+            </span>
+            <span class="text-[11px] text-[#8A94A6] font-mono">Supabase Auth + Profiles</span>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-black text-white mt-1">Centro de Gestión de Usuarios y Roles</h3>
+          <p class="text-xs text-[#8A94A6] mt-0.5">
+            Crea cuentas, asigna roles (SUPER_ADMIN, RESTAURANT_ADMIN, COCINA, DRIVER, CLIENT), verifica conductores o inicia sesión instantáneamente en cualquier cuenta.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="loadHubUsersDirectory()" class="px-3.5 py-2.5 rounded-xl bg-[#1A202C] hover:bg-[#242C3D] text-white border border-[#2D3748] text-xs font-bold transition-all">
+            🔄 Sincronizar
+          </button>
+          <button onclick="openCreateUserModal()" class="px-4 py-2.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs shadow-lg shadow-[#06C167]/25 transition-all flex items-center gap-1.5">
+            <span>➕</span> Crear Nuevo Usuario
+          </button>
+        </div>
+      </div>
+
+      <!-- KPIs de Usuarios por Rol (Color de Icono Uniforme #06C167) -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div class="p-3.5 rounded-2xl bg-[#161922] border border-[#252B3B]">
+          <span class="text-[10px] uppercase font-bold text-[#06C167]">👥 Total Cuentas</span>
+          <p class="text-2xl font-black text-white font-mono mt-0.5" id="iamCountTotal">0</p>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-[#161922] border border-[#06C167]/30">
+          <span class="text-[10px] uppercase font-bold text-[#06C167]">🍔 Clientes</span>
+          <p class="text-2xl font-black text-white font-mono mt-0.5" id="iamCountClients">0</p>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-[#161922] border border-[#06C167]/30">
+          <span class="text-[10px] uppercase font-bold text-[#06C167]">🏪 Comercios / Staff</span>
+          <p class="text-2xl font-black text-white font-mono mt-0.5" id="iamCountRests">0</p>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-[#161922] border border-[#06C167]/30">
+          <span class="text-[10px] uppercase font-bold text-[#06C167]">🛵 Repartidores</span>
+          <p class="text-2xl font-black text-white font-mono mt-0.5" id="iamCountDrivers">0</p>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-[#161922] border border-[#06C167]/30 col-span-2 sm:col-span-1">
+          <span class="text-[10px] uppercase font-bold text-[#06C167]">🛡️ Super Admins</span>
+          <p class="text-2xl font-black text-white font-mono mt-0.5" id="iamCountAdmins">0</p>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros por Rol y Búsqueda -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#161922] p-3 rounded-2xl border border-[#242B38]">
+        <div class="flex flex-wrap items-center gap-1.5" id="iamRoleFilterPills">
+          <button onclick="setIamRoleFilter('ALL')" data-role="ALL" class="iam-role-pill px-3 py-1.5 rounded-xl text-xs font-black bg-[#06C167] text-black transition-all">
+            Todos
+          </button>
+          <button onclick="setIamRoleFilter('CLIENT')" data-role="CLIENT" class="iam-role-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-[#1F2430] text-[#A6A6A6] hover:text-white transition-all">
+            🍔 Clientes
+          </button>
+          <button onclick="setIamRoleFilter('RESTAURANT_ADMIN')" data-role="RESTAURANT_ADMIN" class="iam-role-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-[#1F2430] text-[#A6A6A6] hover:text-white transition-all">
+            🏪 Restaurantes & Cocina
+          </button>
+          <button onclick="setIamRoleFilter('DRIVER')" data-role="DRIVER" class="iam-role-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-[#1F2430] text-[#A6A6A6] hover:text-white transition-all">
+            🛵 Repartidores
+          </button>
+          <button onclick="setIamRoleFilter('SUPER_ADMIN')" data-role="SUPER_ADMIN" class="iam-role-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-[#1F2430] text-[#A6A6A6] hover:text-white transition-all">
+            🛡️ Super Admins
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="text" id="iamSearchInput" oninput="renderIamUsersList()" placeholder="Buscar por nombre, correo, teléfono o local..." class="w-full md:w-72 bg-black border border-[#2E3646] focus:border-[#06C167] rounded-xl px-3.5 py-2 text-xs text-white outline-none" />
+        </div>
+      </div>
+
+      <!-- Tabla / Lista de Usuarios -->
+      <div class="overflow-x-auto rounded-2xl border border-[#242B38] bg-[#0E1017]">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-[#242B38] text-[10px] uppercase font-bold text-[#8A94A6] bg-[#141822]">
+              <th class="py-3 px-4">Usuario / Identidad</th>
+              <th class="py-3 px-4">Rol & Nivel RBAC</th>
+              <th class="py-3 px-4">Asignación / Vehículo</th>
+              <th class="py-3 px-4">Estado</th>
+              <th class="py-3 px-4 text-right">Acciones & Acceso Rápido</th>
+            </tr>
+          </thead>
+          <tbody id="iamUsersTableBody" class="divide-y divide-[#1E2433] text-xs">
+            <tr>
+              <td colspan="5" class="py-8 text-center text-[#8A94A6]">Cargando directorio de usuarios desde Supabase...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ACCESO DIRECTO A LA TORRE DE CONTROL Y CONTROL DE COMISIÓN -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+      
+      <!-- Torre de Control -->
+      <div class="md:col-span-8 bg-[#121212] border border-[#2E2E2E] rounded-3xl p-6 sm:p-7 shadow-2xl flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/30 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-[#06C167] animate-ping"></span>
+              RADAR GLOBAL EN VIVO
+            </span>
+            <span class="text-xs text-[#8A94A6] font-mono">Managua Central</span>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-black text-white">Torre de Control de Flota & Pedidos</h3>
+          <p class="text-xs text-[#8A94A6] leading-relaxed">
+            Supervisa en el mapa interactivo todos los repartidores activos en Managua, sus ubicaciones exactas transmitidas vía WebSockets, velocidades y pedidos en tránsito.
+          </p>
+        </div>
+        <div class="pt-5 mt-4 border-t border-[#222938] flex items-center justify-between">
+          <span class="text-xs text-[#8A94A6]">Telemetría en tiempo real</span>
+          <a href="/admin/control-tower" class="px-5 py-2.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs transition-all shadow-lg shadow-[#06C167]/20 flex items-center gap-2">
+            <span>Abrir Torre de Control</span>
+            <span>→</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Ajuste Global de Comisión -->
+      <div class="md:col-span-4 bg-[#121212] border border-[#2E2E2E] rounded-3xl p-6 shadow-2xl flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-bold uppercase text-[#8A94A6] block mb-2">Comisión Plataforma</span>
+          <div class="flex items-baseline gap-2 mb-3">
+            <span class="text-4xl font-black text-[#06C167] font-mono" id="hubCommissionDisplay">15%</span>
+            <span class="text-xs text-[#8A94A6]">Global</span>
+          </div>
+          <p class="text-[11px] text-[#8A94A6] leading-relaxed">
+            Porcentaje retenido a los restaurantes por cada comanda para cubrir soporte, pasarela y tecnología.
+          </p>
+        </div>
+        <div class="pt-4 border-t border-[#262626] space-y-2">
+          <div class="flex items-center gap-2">
+            <input type="number" id="quickCommissionInput" value="15" step="0.5" min="5" max="35" class="w-20 bg-black border border-[#2E2E2E] focus:border-[#06C167] rounded-lg px-2 py-1.5 text-center text-xs text-white font-mono" />
+            <button onclick="updatePlatformCommission(document.getElementById('quickCommissionInput').value)" class="flex-1 py-1.5 rounded-lg bg-[#1F1F1F] hover:bg-[#06C167] hover:text-black text-white text-xs font-bold transition-all border border-[#2E2E2E]">
+              Guardar %
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SECCIONES DE ACCESO RÁPIDO PARA AUDITORÍA -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      <!-- Panel de Restaurante -->
+      <div class="bg-[#121212] border border-[#262626] rounded-3xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-2xl p-2.5 rounded-xl bg-[#1C1C1C]">🏪</span>
+          <a href="/restaurant/onboard" class="text-[11px] text-[#06C167] hover:underline font-bold">+ Nuevo Local</a>
+        </div>
+        <div>
+          <h4 class="text-base font-bold text-white">Red de Restaurantes</h4>
+          <p class="text-xs text-[#8A94A6] mt-1">Supervisa las cocinas activas, comisiones y cartas de comida.</p>
+        </div>
+        <div class="space-y-2 pt-2 border-t border-[#222938]">
+          <a href="/restaurant/orders" class="block p-2.5 rounded-xl bg-black hover:border-[#06C167] border border-[#262626] text-xs font-bold text-white flex justify-between items-center transition-colors">
+            <span>🛎️ KDS de Cocina</span>
+            <span class="text-[#06C167]">Abrir →</span>
+          </a>
+          <a href="/restaurant/menu" class="block p-2.5 rounded-xl bg-black hover:border-[#06C167] border border-[#262626] text-xs font-bold text-white flex justify-between items-center transition-colors">
+            <span>📋 Carta y Modificadores</span>
+            <span class="text-[#06C167]">Abrir →</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- App de Repartidores -->
+      <div class="bg-[#121212] border border-[#262626] rounded-3xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-2xl p-2.5 rounded-xl bg-[#1C1C1C]">🛵</span>
+          <span class="text-[10px] text-[#06C167] bg-[#06C167]/15 px-2 py-0.5 rounded-full font-bold">Flota Activa</span>
+        </div>
+        <div>
+          <h4 class="text-base font-bold text-white">Flota de Conducción</h4>
+          <p class="text-xs text-[#8A94A6] mt-1">Consola móvil de despachos, GPS Waze/Google Maps y bolsa de pedidos.</p>
+        </div>
+        <div class="space-y-2 pt-2 border-t border-[#222938]">
+          <a href="/driver" class="block p-2.5 rounded-xl bg-black hover:border-[#06C167] border border-[#262626] text-xs font-bold text-white flex justify-between items-center transition-colors">
+            <span>📲 App de Repartidor</span>
+            <span class="text-[#06C167]">Abrir →</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- App de Clientes -->
+      <div class="bg-[#121212] border border-[#262626] rounded-3xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-2xl p-2.5 rounded-xl bg-[#1C1C1C]">🍔</span>
+          <span class="text-[10px] text-[#06C167] bg-[#06C167]/15 px-2 py-0.5 rounded-full font-bold">E-Commerce</span>
+        </div>
+        <div>
+          <h4 class="text-base font-bold text-white">Experiencia de Comensal</h4>
+          <p class="text-xs text-[#8A94A6] mt-1">Catálogo de productos, carrito de compra y live tracking con MapLibre.</p>
+        </div>
+        <div class="space-y-2 pt-2 border-t border-[#222938]">
+          <a href="/client" class="block p-2.5 rounded-xl bg-black hover:border-[#06C167] border border-[#262626] text-xs font-bold text-white flex justify-between items-center transition-colors">
+            <span>🛍️ Catálogo de Platos</span>
+            <span class="text-[#06C167]">Abrir →</span>
+          </a>
+          <a href="/client/tracking" class="block p-2.5 rounded-xl bg-black hover:border-[#06C167] border border-[#262626] text-xs font-bold text-white flex justify-between items-center transition-colors">
+            <span>📍 Tracking Live GPS</span>
+            <span class="text-[#06C167]">Abrir →</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="mt-12 text-center text-xs text-[#757575] border-t border-[#262626] pt-6">
+      Base de Datos: <span class="font-mono text-[#A6A6A6]">https://zciujeihkvleehhqbeat.supabase.co</span> • Motor de Despacho OSRM: <span class="font-mono text-[#A6A6A6]">http://localhost:4000</span>
+    </footer>
+  </div>
+
+  <!-- ====================================================================== -->
+  <!-- MODAL DE CREACIÓN / EDICIÓN DE USUARIO Y PERMISOS RBAC (HUB IAM)       -->
+  <!-- ====================================================================== -->
+  <div id="modalHubUserForm" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#141720] border-2 border-[#06C167]/40 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto text-xs">
+      <div class="flex items-center justify-between pb-3 border-b border-[#252E3E]">
+        <div class="flex items-center gap-2.5">
+          <span class="p-2 rounded-xl bg-[#06C167]/15 text-[#06C167] text-lg">👥</span>
+          <div>
+            <h3 class="text-base font-black text-white" id="hubUserModalTitle">Crear Nuevo Usuario</h3>
+            <p class="text-[11px] text-[#8A94A6]">Configura identidad, rol de plataforma y permisos específicos</p>
+          </div>
+        </div>
+        <button onclick="closeHubUserModal()" class="text-[#8A94A6] hover:text-white text-base p-1">✕</button>
+      </div>
+
+      <form id="hubUserForm" onsubmit="saveHubUserForm(event)" class="space-y-3.5">
+        <input type="hidden" id="hubFormUserId" value="" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-[#8A94A6] mb-1">Nombre Completo *</label>
+            <input type="text" id="hubFormFullName" required placeholder="Ej: Andrea Castillo" class="w-full bg-[#0D1017] border border-[#283244] focus:border-[#06C167] rounded-xl p-2.5 text-white outline-none" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-[#8A94A6] mb-1">Teléfono / WhatsApp *</label>
+            <input type="text" id="hubFormPhone" required placeholder="+505 8888-1122" class="w-full bg-[#0D1017] border border-[#283244] focus:border-[#06C167] rounded-xl p-2.5 text-white outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-[#8A94A6] mb-1">Correo Electrónico *</label>
+            <input type="email" id="hubFormEmail" required placeholder="usuario@pedidosnica.com" class="w-full bg-[#0D1017] border border-[#283244] focus:border-[#06C167] rounded-xl p-2.5 text-white outline-none" />
+          </div>
+          <div id="hubFormPasswordWrap">
+            <label class="block text-[10px] font-bold uppercase text-[#8A94A6] mb-1">Contraseña (Crear / Resetear)</label>
+            <input type="text" id="hubFormPassword" value="Password123!" placeholder="Nueva contraseña..." class="w-full bg-[#0D1017] border border-[#283244] focus:border-[#06C167] rounded-xl p-2.5 text-white font-mono outline-none" />
+          </div>
+        </div>
+
+        <!-- Dirección Principal y Pregunta de Seguridad -->
+        <div class="p-3.5 rounded-2xl bg-[#0D1017] border border-[#283244] space-y-3">
+          <p class="text-[11px] font-bold text-[#06C167] flex items-center justify-between">
+            <span>📍 Dirección Principal, Libreta Multi-Dirección y Seguridad</span>
+            <span id="hubFormAddrCountBadge" class="text-[10px] bg-[#06C167]/15 px-2 py-0.5 rounded-full font-mono">0 guardadas</span>
+          </p>
+          <div>
+            <label class="block text-[10px] text-[#8A94A6] mb-1">Dirección Activa / Principal</label>
+            <input type="text" id="hubFormAddress" placeholder="Ej: Colonia Los Robles, Rotonda El Güegüense 2c al Sur, Managua" class="w-full bg-[#141822] border border-[#283244] focus:border-[#06C167] rounded-xl p-2 text-white outline-none" />
+          </div>
+
+          <!-- Lista de múltiples direcciones del usuario y botón para agregar otra -->
+          <div id="hubFormSavedAddressesList" class="space-y-1.5 max-h-32 overflow-y-auto"></div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="hubFormNewExtraLabel" placeholder="Etiqueta (ej. Oficina)" class="w-28 bg-[#141822] border border-[#283244] rounded-xl p-1.5 text-white text-[11px] outline-none" />
+            <input type="text" id="hubFormNewExtraAddr" placeholder="Agregar otra dirección para este usuario..." class="flex-1 bg-[#141822] border border-[#283244] rounded-xl p-1.5 text-white text-[11px] outline-none" />
+            <button type="button" onclick="addHubUserExtraAddress()" class="px-2.5 py-1.5 rounded-xl bg-[#06C167]/20 hover:bg-[#06C167] text-[#06C167] hover:text-black font-bold text-[11px] transition-all shrink-0">+ Dirección</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-[#1E2534]">
+            <div>
+              <label class="block text-[10px] text-[#8A94A6] mb-1">Pregunta de Seguridad (Reset)</label>
+              <select id="hubFormSecQuestion" class="w-full bg-[#141822] border border-[#283244] rounded-xl p-2 text-white outline-none">
+                <option value="¿Cuál es tu comida nica favorita?">¿Cuál es tu comida nica favorita?</option>
+                <option value="¿Cuál es el nombre de tu primera mascota?">¿Cuál es el nombre de tu primera mascota?</option>
+                <option value="¿En qué ciudad naciste?">¿En qué ciudad naciste?</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] text-[#8A94A6] mb-1">Respuesta de Seguridad</label>
+              <input type="text" id="hubFormSecAnswer" value="gallo pinto" placeholder="Respuesta..." class="w-full bg-[#141822] border border-[#283244] rounded-xl p-2 text-white outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-[#222938]">
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-[#06C167] mb-1">Rol Principal en Ecosistema *</label>
+            <select id="hubFormRole" onchange="onHubFormRoleChange()" class="w-full bg-[#0D1017] border border-[#06C167]/50 rounded-xl p-2.5 text-white font-bold outline-none">
+              <option value="CLIENT">🍔 Cliente / Comensal (CLIENT)</option>
+              <option value="RESTAURANT_ADMIN">🏪 Comercio / Restaurante (RESTAURANT_ADMIN)</option>
+              <option value="DRIVER">🛵 Repartidor de Flota (DRIVER)</option>
+              <option value="SUPER_ADMIN">🛡️ Super Admin Plataforma (SUPER_ADMIN)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-[#8A94A6] mb-1">Estado de la Cuenta</label>
+            <select id="hubFormStatus" class="w-full bg-[#0D1017] border border-[#283244] rounded-xl p-2.5 text-white font-bold outline-none">
+              <option value="ACTIVE">🟢 Activo / Verificado</option>
+              <option value="PENDING">🟡 Pendiente de Aprobación</option>
+              <option value="SUSPENDED">🔴 Suspendido / Bloqueado</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Campos exclusivos para RESTAURANT_ADMIN -->
+        <div id="hubFormRestaurantSection" class="hidden p-3.5 rounded-2xl bg-[#0D1017] border border-purple-500/40 space-y-3">
+          <p class="text-[11px] font-bold text-purple-300 flex items-center gap-1.5">
+            <span>🏪</span> Configuración de Acceso a Restaurante
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] text-[#8A94A6] mb-1">Nivel Operativo (Subrol)</label>
+              <select id="hubFormSubrole" class="w-full bg-[#141822] border border-[#283244] rounded-xl p-2 text-white outline-none">
+                <option value="ADMIN">👑 Dueño / Administrador Total</option>
+                <option value="STAFF">👨‍🍳 Operador de Cocina (Solo KDS)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] text-[#8A94A6] mb-1">Sucursal Asignada</label>
+              <select id="hubFormRestaurantId" class="w-full bg-[#141822] border border-[#283244] rounded-xl p-2 text-white outline-none">
+              </select>
+            </div>
+          </div>
+          <label class="flex items-center gap-2 cursor-pointer pt-1">
+            <input type="checkbox" id="hubFormMultiManage" class="accent-purple-500 w-4 h-4 rounded" />
+            <span class="text-purple-200 font-semibold">Habilitar Multi-Gestión de Cadena (Puede alternar entre varias sucursales)</span>
+          </label>
+        </div>
+
+        <!-- Campos exclusivos para DRIVER -->
+        <div id="hubFormDriverSection" class="hidden p-3.5 rounded-2xl bg-[#0D1017] border border-blue-500/40 space-y-3">
+          <p class="text-[11px] font-bold text-blue-300 flex items-center gap-1.5">
+            <span>🛵</span> Datos de Flota y Vehículo del Conductor
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] text-[#8A94A6] mb-1">Tipo de Vehículo</label>
+              <select id="hubFormVehicleType" class="w-full bg-[#141822] border border-[#283244] rounded-xl p-2 text-white outline-none">
+                <option value="MOTORCYCLE">🛵 Motocicleta</option>
+                <option value="BICYCLE">🚲 Bicicleta</option>
+                <option value="CAR">🚗 Automóvil</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] text-[#8A94A6] mb-1">Placa / Identificador</label>
+              <input type="text" id="hubFormLicensePlate" placeholder="M-48291" value="M-48291" class="w-full bg-[#141822] border border-[#283244] rounded-xl p-2 text-white font-mono outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-[#252E3E]">
+          <button type="button" onclick="closeHubUserModal()" class="px-4 py-2.5 rounded-xl bg-[#1F2430] hover:bg-[#2A3142] text-white font-bold">
+            Cancelar
+          </button>
+          <button type="submit" id="btnHubSaveUser" class="px-5 py-2.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black shadow-lg shadow-[#06C167]/25">
+            Guardar Usuario
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST DE RETROALIMENTACIÓN HUB -->
+  <div id="hubToast" class="hidden fixed bottom-6 right-6 z-50 bg-[#141822] border-2 border-[#06C167] text-white px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center gap-2.5">
+    <span id="hubToastIcon" class="text-lg">✓</span>
+    <span id="hubToastText">Acción completada</span>
+  </div>
+
+  <script>
+    (function() {
+      let allHubUsers = [];
+      let allHubRestaurants = [];
+      let currentIamRoleFilter = 'ALL';
+
+      function showHubToast(msg, icon = '✓') {
+        const t = document.getElementById('hubToast');
+        const txt = document.getElementById('hubToastText');
+        const ic = document.getElementById('hubToastIcon');
+        if (!t || !txt) return;
+        txt.innerText = msg;
+        if (ic) ic.innerText = icon;
+        t.classList.remove('hidden');
+        setTimeout(() => t.classList.add('hidden'), 3200);
+      }
+
+      function checkManagerAuth() {
+        let user = JSON.parse(localStorage.getItem('pedidosnica_user') || 'null');
+        const restUser = JSON.parse(localStorage.getItem('pedidosnica_rest_user') || 'null');
+
+        if ((!user || user.role !== 'SUPER_ADMIN') && restUser) {
+          user = {
+            full_name: restUser.full_name || 'Roberto Morales',
+            role: 'RESTAURANT_ADMIN',
+            subrole: restUser.subrole || 'ADMIN'
+          };
+        }
+
+        const gate = document.getElementById('managerAccessGate');
+        const content = document.getElementById('managerHubContent');
+        const notice = document.getElementById('nonManagerRoleNotice');
+        const roleLabel = document.getElementById('detectedRoleName');
+        const nameDisplay = document.getElementById('managerDisplayName');
+
+        if (!user || user.role !== 'SUPER_ADMIN') {
+          if (gate) gate.classList.remove('hidden');
+          if (content) content.classList.add('hidden');
+          if (user) {
+            if (notice) notice.classList.remove('hidden');
+            if (roleLabel) {
+              const rMap = {
+                'RESTAURANT_ADMIN': user.subrole === 'STAFF' ? 'Operador de Cocina (Staff)' : 'Administrador de Restaurante',
+                'DRIVER': 'Repartidor',
+                'CLIENT': 'Cliente / Comensal'
+              };
+              roleLabel.innerText = rMap[user.role] || user.role;
+            }
+          } else {
+            if (notice) notice.classList.add('hidden');
+          }
+        } else {
+          if (gate) gate.classList.add('hidden');
+          if (content) content.classList.remove('hidden');
+          if (nameDisplay) nameDisplay.innerText = user.full_name || 'Carlos Ortega';
+          loadHubUsersDirectory();
+        }
+      }
+
+      window.loadHubUsersDirectory = async function() {
+        try {
+          const resp = await fetch('/api/auth/users');
+          const data = await resp.json();
+          if (data.success) {
+            allHubUsers = data.users || [];
+            allHubRestaurants = data.restaurants || [];
+            populateRestaurantSelect();
+            updateIamKpis();
+            renderIamUsersList();
+          }
+        } catch (err) {
+          console.error('Error cargando directorio IAM:', err);
+        }
+      };
+
+      function populateRestaurantSelect() {
+        const sel = document.getElementById('hubFormRestaurantId');
+        if (!sel) return;
+        if (allHubRestaurants.length === 0) {
+          sel.innerHTML = '<option value="6701bc0c-e5ce-475a-8893-75e9d06e8012">Pupusería & Antojitos El Diamante</option>';
+          return;
+        }
+        sel.innerHTML = allHubRestaurants.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+      }
+
+      function updateIamKpis() {
+        const total = allHubUsers.length;
+        const clients = allHubUsers.filter(u => u.role === 'CLIENT').length;
+        const rests = allHubUsers.filter(u => u.role === 'RESTAURANT_ADMIN').length;
+        const drivers = allHubUsers.filter(u => u.role === 'DRIVER').length;
+        const admins = allHubUsers.filter(u => u.role === 'SUPER_ADMIN').length;
+
+        const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+        setTxt('topCountUsers', total);
+        setTxt('iamCountTotal', total);
+        setTxt('iamCountClients', clients);
+        setTxt('iamCountRests', rests);
+        setTxt('iamCountDrivers', drivers);
+        setTxt('iamCountAdmins', admins);
+      }
+
+      window.setIamRoleFilter = function(role) {
+        currentIamRoleFilter = role;
+        document.querySelectorAll('.iam-role-pill').forEach(btn => {
+          if (btn.getAttribute('data-role') === role) {
+            btn.className = 'iam-role-pill px-3 py-1.5 rounded-xl text-xs font-black bg-[#06C167] text-black transition-all';
+          } else {
+            btn.className = 'iam-role-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-[#1F2430] text-[#A6A6A6] hover:text-white transition-all';
+          }
+        });
+        renderIamUsersList();
+      };
+
+      window.renderIamUsersList = function() {
+        const tbody = document.getElementById('iamUsersTableBody');
+        if (!tbody) return;
+
+        const search = (document.getElementById('iamSearchInput')?.value || '').toLowerCase().trim();
+
+        const filtered = allHubUsers.filter(u => {
+          if (currentIamRoleFilter !== 'ALL' && u.role !== currentIamRoleFilter) return false;
+          if (search) {
+            const hay = `${u.full_name || ''} ${u.email || ''} ${u.phone || ''} ${u.restaurant_name || ''} ${u.driver_profile?.license_plate || ''}`.toLowerCase();
+            return hay.includes(search);
+          }
+          return true;
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-[#8A94A6]">No se encontraron usuarios con ese filtro.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(u => {
+          let roleBadge = '';
+          if (u.role === 'SUPER_ADMIN') {
+            roleBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/30">🛡️ SUPER ADMIN</span>';
+          } else if (u.role === 'RESTAURANT_ADMIN') {
+            if (u.subrole === 'STAFF') {
+              roleBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/30">👨‍🍳 COCINA (STAFF)</span>';
+            } else {
+              roleBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/30">👑 ADMIN LOCAL</span>';
+            }
+          } else if (u.role === 'DRIVER') {
+            roleBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/30">🛵 REPARTIDOR</span>';
+          } else {
+            roleBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/30">🍔 CLIENTE</span>';
+          }
+
+          let assignmentInfo = `
+            <div>
+              <p class="font-bold text-white truncate max-w-[220px]">📍 ${u.address || 'Managua, Nicaragua'}</p>
+              <span class="text-[10px] text-[#06C167] font-semibold">📚 ${(u.saved_addresses || []).length || 1} dirección(es) • 🛡️ Pregunta activa</span>
+            </div>
+          `;
+          if (u.role === 'RESTAURANT_ADMIN') {
+            assignmentInfo = `
+              <div>
+                <p class="font-bold text-white truncate max-w-[210px]">🏪 ${u.restaurant_name || 'Local Asignado'}</p>
+                <span class="text-[10px] ${u.is_multi_management ? 'text-purple-400 font-bold' : 'text-[#8A94A6]'}">
+                  ${u.is_multi_management ? '🏢 Multi-Sucursal Autorizado' : '🏷️ Unidad Única'}
+                </span>
+              </div>
+            `;
+          } else if (u.role === 'DRIVER') {
+            const vt = u.driver_profile?.vehicle_type || 'MOTORCYCLE';
+            const plate = u.driver_profile?.license_plate || 'M-1029';
+            const vLabel = vt === 'BICYCLE' ? '🚲 Bicicleta' : (vt === 'CAR' ? '🚗 Automóvil' : '🛵 Motocicleta');
+            assignmentInfo = `
+              <div>
+                <p class="font-bold text-white">${vLabel} • <span class="font-mono text-[#06C167]">${plate}</span></p>
+                <span class="text-[10px] text-[#8A94A6]">Estado GPS: ${u.driver_profile?.current_status || 'OFFLINE'}</span>
+              </div>
+            `;
+          } else if (u.role === 'SUPER_ADMIN') {
+            assignmentInfo = '<span class="text-amber-300 font-semibold">Torre de Control & Tarifas Globales</span>';
+          }
+
+          const st = u.account_status || 'ACTIVE';
+          let statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/30">🟢 Activo</span>';
+          if (st === 'PENDING') {
+            statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">🟡 Pendiente</span>';
+          } else if (st === 'SUSPENDED') {
+            statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">🔴 Suspendido</span>';
+          }
+
+          const nextToggleStatus = st === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+          const toggleLabel = st === 'ACTIVE' ? '⏸️ Suspender' : '✅ Activar';
+
+          return `
+            <tr class="hover:bg-[#151924] transition-colors">
+              <td class="py-3.5 px-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-[#1E2536] border border-[#2E384D] flex items-center justify-center font-black text-[#06C167] text-xs shrink-0">
+                    ${(u.full_name || 'U').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div class="min-w-0">
+                    <p class="font-bold text-white text-xs truncate">${u.full_name || 'Usuario'}</p>
+                    <p class="text-[11px] text-[#8A94A6] font-mono truncate">${u.email}</p>
+                    <p class="text-[10px] text-[#6C768A]">${u.phone || '+505 8888-0000'}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3.5 px-4">${roleBadge}</td>
+              <td class="py-3.5 px-4">${assignmentInfo}</td>
+              <td class="py-3.5 px-4">${statusBadge}</td>
+              <td class="py-3.5 px-4 text-right">
+                <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                  <button onclick="impersonateHubUser('${u.id}')" title="Iniciar sesión como este usuario y abrir su aplicación" class="px-2.5 py-1.5 rounded-lg bg-[#06C167]/15 hover:bg-[#06C167] text-[#06C167] hover:text-black border border-[#06C167]/30 font-bold text-[11px] transition-all">
+                    🔑 Entrar como
+                  </button>
+                  <button onclick="openEditUserModal('${u.id}')" class="px-2.5 py-1.5 rounded-lg bg-[#1C2230] hover:bg-[#283145] text-white border border-[#2C364C] font-semibold text-[11px] transition-all">
+                    ✏️ Editar
+                  </button>
+                  <button onclick="toggleHubUserStatus('${u.id}', '${nextToggleStatus}')" class="px-2.5 py-1.5 rounded-lg bg-[#1C2230] hover:bg-[#283145] text-[#A6A6A6] hover:text-white border border-[#2C364C] font-semibold text-[11px] transition-all">
+                    ${toggleLabel}
+                  </button>
+                  <button onclick="deleteHubUser('${u.id}')" title="Eliminar usuario" class="px-2 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border border-rose-500/25 font-bold text-[11px] transition-all">
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      };
+
+      window.onHubFormRoleChange = function() {
+        const role = document.getElementById('hubFormRole').value;
+        const restSec = document.getElementById('hubFormRestaurantSection');
+        const drvSec = document.getElementById('hubFormDriverSection');
+        if (restSec) restSec.classList.toggle('hidden', role !== 'RESTAURANT_ADMIN');
+        if (drvSec) drvSec.classList.toggle('hidden', role !== 'DRIVER');
+      };
+
+      let editingUserAddresses = [];
+
+      function renderHubModalSavedAddresses() {
+        const listEl = document.getElementById('hubFormSavedAddressesList');
+        const badgeEl = document.getElementById('hubFormAddrCountBadge');
+        if (badgeEl) badgeEl.innerText = `${editingUserAddresses.length} guardadas`;
+        if (!listEl) return;
+        if (editingUserAddresses.length === 0) {
+          listEl.innerHTML = '<p class="text-[10px] text-[#6C768A] italic">Sin direcciones adicionales registradas.</p>';
+          return;
+        }
+        listEl.innerHTML = editingUserAddresses.map((a, idx) => `
+          <div class="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-[#141822] border border-[#252E3E] text-[11px]">
+            <div class="truncate">
+              <span class="font-bold text-[#06C167]">${a.icon || '📍'} ${a.label}:</span>
+              <span class="text-white ml-1">${a.address}</span>
+            </div>
+            <button type="button" onclick="removeHubUserExtraAddress(${idx})" class="text-rose-400 hover:text-rose-300 font-bold px-1">✕</button>
+          </div>
+        `).join('');
+      }
+
+      window.addHubUserExtraAddress = function() {
+        const lbl = document.getElementById('hubFormNewExtraLabel')?.value.trim() || 'Otra';
+        const addr = document.getElementById('hubFormNewExtraAddr')?.value.trim() || '';
+        if (!addr) return;
+        editingUserAddresses.push({
+          id: 'addr-' + Date.now() + '-' + Math.floor(Math.random() * 100),
+          label: lbl,
+          icon: lbl.toLowerCase().includes('oficina') ? '🏢' : (lbl.toLowerCase().includes('casa') ? '🏠' : '📍'),
+          building_type: 'CASA',
+          zone: 'Managua',
+          address: addr,
+          reference: '',
+          recipient_phone: document.getElementById('hubFormPhone')?.value.trim() || '+505 8888-0000',
+          lat: 12.1185,
+          lng: -86.2562,
+          is_default: editingUserAddresses.length === 0
+        });
+        document.getElementById('hubFormNewExtraLabel').value = '';
+        document.getElementById('hubFormNewExtraAddr').value = '';
+        if (!document.getElementById('hubFormAddress').value) {
+          document.getElementById('hubFormAddress').value = addr;
+        }
+        renderHubModalSavedAddresses();
+      };
+
+      window.removeHubUserExtraAddress = function(idx) {
+        editingUserAddresses.splice(idx, 1);
+        renderHubModalSavedAddresses();
+      };
+
+      window.openCreateUserModal = function() {
+        document.getElementById('hubUserModalTitle').innerText = '➕ Crear Nuevo Usuario';
+        document.getElementById('hubFormUserId').value = '';
+        document.getElementById('hubFormFullName').value = '';
+        document.getElementById('hubFormPhone').value = '+505 ';
+        document.getElementById('hubFormEmail').value = '';
+        document.getElementById('hubFormPassword').value = 'Password123!';
+        document.getElementById('hubFormPasswordWrap').classList.remove('hidden');
+        document.getElementById('hubFormAddress').value = 'Galerías Santo Domingo, Managua';
+        document.getElementById('hubFormSecQuestion').value = '¿Cuál es tu comida nica favorita?';
+        document.getElementById('hubFormSecAnswer').value = 'gallo pinto';
+        editingUserAddresses = [];
+        renderHubModalSavedAddresses();
+        document.getElementById('hubFormRole').value = 'CLIENT';
+        document.getElementById('hubFormStatus').value = 'ACTIVE';
+        document.getElementById('hubFormSubrole').value = 'ADMIN';
+        document.getElementById('hubFormMultiManage').checked = false;
+        onHubFormRoleChange();
+        document.getElementById('modalHubUserForm').classList.remove('hidden');
+      };
+
+      window.openEditUserModal = function(userId) {
+        const u = allHubUsers.find(x => x.id === userId);
+        if (!u) return;
+        document.getElementById('hubUserModalTitle').innerText = '✏️ Editar Usuario, Direcciones y Contraseña';
+        document.getElementById('hubFormUserId').value = u.id;
+        document.getElementById('hubFormFullName').value = u.full_name || '';
+        document.getElementById('hubFormPhone').value = u.phone || '';
+        document.getElementById('hubFormEmail').value = u.email || '';
+        document.getElementById('hubFormPassword').value = u.password || 'Password123!';
+        document.getElementById('hubFormPasswordWrap').classList.remove('hidden');
+        document.getElementById('hubFormAddress').value = u.address || 'Galerías Santo Domingo, Managua';
+        document.getElementById('hubFormSecQuestion').value = u.security_question || '¿Cuál es tu comida nica favorita?';
+        document.getElementById('hubFormSecAnswer').value = u.security_answer || 'gallo pinto';
+        editingUserAddresses = Array.isArray(u.saved_addresses) ? JSON.parse(JSON.stringify(u.saved_addresses)) : [];
+        renderHubModalSavedAddresses();
+        document.getElementById('hubFormRole').value = u.role || 'CLIENT';
+        document.getElementById('hubFormStatus').value = u.account_status || 'ACTIVE';
+        document.getElementById('hubFormSubrole').value = u.subrole || 'ADMIN';
+        if (u.restaurant_id) {
+          document.getElementById('hubFormRestaurantId').value = u.restaurant_id;
+        }
+        document.getElementById('hubFormMultiManage').checked = !!u.is_multi_management;
+        if (u.driver_profile) {
+          document.getElementById('hubFormVehicleType').value = u.driver_profile.vehicle_type || 'MOTORCYCLE';
+          document.getElementById('hubFormLicensePlate').value = u.driver_profile.license_plate || 'M-1029';
+        }
+        onHubFormRoleChange();
+        document.getElementById('modalHubUserForm').classList.remove('hidden');
+      };
+
+      window.closeHubUserModal = function() {
+        document.getElementById('modalHubUserForm').classList.add('hidden');
+      };
+
+      window.saveHubUserForm = async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnHubSaveUser');
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
+
+        const userId = document.getElementById('hubFormUserId').value;
+        const full_name = document.getElementById('hubFormFullName').value.trim();
+        const phone = document.getElementById('hubFormPhone').value.trim();
+        const email = document.getElementById('hubFormEmail').value.trim();
+        const password = document.getElementById('hubFormPassword').value.trim();
+        const address = document.getElementById('hubFormAddress').value.trim();
+        const security_question = document.getElementById('hubFormSecQuestion').value;
+        const security_answer = document.getElementById('hubFormSecAnswer').value.trim();
+        const role = document.getElementById('hubFormRole').value;
+        const account_status = document.getElementById('hubFormStatus').value;
+        const subrole = document.getElementById('hubFormSubrole').value;
+        const restaurant_id = document.getElementById('hubFormRestaurantId').value;
+        const restObj = allHubRestaurants.find(r => r.id === restaurant_id);
+        const restaurant_name = restObj ? restObj.name : 'Pupusería & Antojitos El Diamante';
+        const is_multi_management = document.getElementById('hubFormMultiManage').checked;
+        const vehicle_type = document.getElementById('hubFormVehicleType').value;
+        const license_plate = document.getElementById('hubFormLicensePlate').value.trim();
+
+        const authorized_restaurants = is_multi_management
+          ? allHubRestaurants.map(r => ({ id: r.id, name: r.name }))
+          : (restaurant_id ? [{ id: restaurant_id, name: restaurant_name }] : []);
+
+        try {
+          if (!userId) {
+            // Crear nuevo usuario
+            const resp = await fetch('/api/auth/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                full_name,
+                email,
+                phone,
+                password,
+                address,
+                security_question,
+                security_answer,
+                role,
+                subrole,
+                restaurant_id: role === 'RESTAURANT_ADMIN' ? restaurant_id : null,
+                restaurant_name: role === 'RESTAURANT_ADMIN' ? restaurant_name : null,
+                is_multi_management: role === 'RESTAURANT_ADMIN' ? is_multi_management : false,
+                authorized_restaurants: role === 'RESTAURANT_ADMIN' ? authorized_restaurants : [],
+                vehicle_type,
+                license_plate
+              })
+            });
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error || 'Error al crear usuario');
+            showHubToast('Usuario creado y sincronizado con éxito', '🎉');
+          } else {
+            // Actualizar usuario existente
+            const resp = await fetch('/api/auth/admin/user-action', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'UPDATE_USER',
+                userId,
+                full_name,
+                email,
+                phone,
+                password,
+                address,
+                security_question,
+                security_answer,
+                saved_addresses: editingUserAddresses,
+                role,
+                subrole: role === 'RESTAURANT_ADMIN' ? subrole : 'STANDARD',
+                account_status,
+                restaurant_id: role === 'RESTAURANT_ADMIN' ? restaurant_id : null,
+                restaurant_name: role === 'RESTAURANT_ADMIN' ? restaurant_name : null,
+                is_multi_management: role === 'RESTAURANT_ADMIN' ? is_multi_management : false,
+                authorized_restaurants: role === 'RESTAURANT_ADMIN' ? authorized_restaurants : [],
+                vehicle_type,
+                license_plate,
+                is_verified: account_status === 'ACTIVE'
+              })
+            });
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error || 'Error al actualizar usuario');
+            showHubToast('Usuario, direcciones y seguridad actualizados', '✓');
+          }
+          closeHubUserModal();
+          await loadHubUsersDirectory();
+        } catch (err) {
+          alert(err.message);
+        } finally {
+          btn.disabled = false;
+          btn.innerText = 'Guardar Usuario';
+        }
+      };
+
+      window.toggleHubUserStatus = async function(userId, nextStatus) {
+        try {
+          const resp = await fetch('/api/auth/admin/user-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'SET_STATUS',
+              userId,
+              account_status: nextStatus
+            })
+          });
+          const data = await resp.json();
+          if (data.success) {
+            showHubToast('Estado actualizado a ' + nextStatus, nextStatus === 'ACTIVE' ? '🟢' : '🔴');
+            await loadHubUsersDirectory();
+          }
+        } catch (e) {
+          alert('Error al cambiar estado de la cuenta.');
+        }
+      };
+
+      window.deleteHubUser = async function(userId) {
+        const u = allHubUsers.find(x => x.id === userId);
+        if (!confirm('¿Estás seguro de eliminar permanentemente la cuenta de ' + (u?.full_name || userId) + '?')) return;
+        try {
+          const resp = await fetch('/api/auth/admin/user-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'DELETE', userId })
+          });
+          const data = await resp.json();
+          if (data.success) {
+            showHubToast('Usuario eliminado del sistema', '🗑️');
+            await loadHubUsersDirectory();
+          }
+        } catch (e) {
+          alert('Error al eliminar usuario.');
+        }
+      };
+
+      // Impersonation / Acceso directo en 1 clic a cualquier rol
+      window.impersonateHubUser = async function(userId) {
+        try {
+          const resp = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId })
+          });
+          const data = await resp.json();
+          if (!data.success || !data.user) {
+            alert(data.error || 'No se pudo iniciar sesión en esta cuenta.');
+            return;
+          }
+          const u = data.user;
+          if (u.role === 'CLIENT') {
+            localStorage.setItem('pedidosnica_client_user', JSON.stringify({
+              id: u.id,
+              full_name: u.full_name,
+              email: u.email,
+              phone: u.phone || '+505 8899-7711',
+              address: u.address || 'Galerías Santo Domingo, Managua',
+              notes: u.notes || ''
+            }));
+            window.location.href = 'client.html';
+          } else if (u.role === 'RESTAURANT_ADMIN') {
+            localStorage.removeItem('pedidosnica_driver_session');
+            const restSession = {
+              id: u.id,
+              email: u.email,
+              full_name: u.full_name,
+              phone: u.phone,
+              role: u.role,
+              subrole: u.subrole || 'ADMIN',
+              is_multi_management: !!u.is_multi_management,
+              restaurant_id: u.restaurant_id || '6701bc0c-e5ce-475a-8893-75e9d06e8012',
+              restaurant_name: u.restaurant_name || 'Pupusería & Antojitos El Diamante',
+              authorized_restaurants: u.authorized_restaurants || []
+            };
+            localStorage.setItem('pedidosnica_rest_session', JSON.stringify(restSession));
+            localStorage.setItem('pedidosnica_rest_user', JSON.stringify(restSession));
+            localStorage.setItem('active_restaurant_id', restSession.restaurant_id);
+            window.location.href = 'restaurant.html';
+          } else if (u.role === 'DRIVER') {
+            localStorage.removeItem('pedidosnica_rest_session');
+            localStorage.removeItem('pedidosnica_rest_user');
+            const drvSession = {
+              id: u.id,
+              email: u.email,
+              full_name: u.full_name,
+              phone: u.phone,
+              vehicle_type: (u.driver_profile && u.driver_profile.vehicle_type) || 'MOTORCYCLE',
+              license_plate: (u.driver_profile && u.driver_profile.license_plate) || 'M-10293'
+            };
+            localStorage.setItem('pedidosnica_driver_session', JSON.stringify(drvSession));
+            localStorage.setItem('pedidosnica_driver_id', u.id);
+            window.location.href = 'driver.html';
+          } else if (u.role === 'SUPER_ADMIN') {
+            localStorage.setItem('pedidosnica_user', JSON.stringify(u));
+            checkManagerAuth();
+            showHubToast('Sesión activa como ' + u.full_name, '🛡️');
+          }
+        } catch (e) {
+          alert('Error al cambiar de cuenta.');
+        }
+      };
+
+      window.loginAsManager = async function(email, password) {
+        try {
+          const resp = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await resp.json();
+          if (data.success && data.user) {
+            if (data.user.role !== 'SUPER_ADMIN') {
+              alert('Esta cuenta (' + data.user.full_name + ') tiene rol ' + data.user.role + '. No tiene permisos de App Manager (SUPER_ADMIN).');
+              return;
+            }
+            localStorage.setItem('pedidosnica_user', JSON.stringify(data.user));
+            checkManagerAuth();
+          } else {
+            alert(data.error || 'Credenciales incorrectas');
+          }
+        } catch(e) {
+          alert('Error de conexión');
+        }
+      };
+
+      window.logoutAppManager = function() {
+        localStorage.removeItem('pedidosnica_user');
+        localStorage.removeItem('pedidosnica_rest_user');
+        localStorage.removeItem('pedidosnica_rest_session');
+        checkManagerAuth();
+      };
+
+      window.quickDemoManagerLogin = function() {
+        window.loginAsManager('manager@pedidosnica.com', 'Password123!');
+      };
+
+      window.updatePlatformCommission = async function(rate) {
+        try {
+          const res = await fetch('/api/admin/commission', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commission_rate: rate })
+          });
+          const data = await res.json();
+          if (data.success) {
+            document.getElementById('hubCommissionDisplay').innerText = parseFloat(rate) + '%';
+            showHubToast('Comisión global actualizada al ' + rate + '%', '💰');
+          }
+        } catch(e) {
+          alert('Error al actualizar comisión');
+        }
+      };
+
+      document.addEventListener('DOMContentLoaded', checkManagerAuth);
+    })();
+  </script>
+
+  
+  <script>
+    (function() {
+      // Catálogo de vectores monocromáticos uniformes (Estilo Lucide / Uber Eats)
+      const SVG_PATHS = {
+        pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+        home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+        building: '<rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>',
+        store: '<path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/>',
+        user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+        users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        cart: '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+        bag: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+        box: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+        receipt: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>',
+        phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+        smartphone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+        mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+        chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+        lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+        unlock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+        key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+        shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+        search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+        edit: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+        trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+        refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/>',
+        save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+        plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+        check: '<polyline points="20 6 9 17 4 12"/>',
+        star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+        grad: '<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>',
+        bike: '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+        car: '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+        zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+        cash: '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
+        card: '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+        target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+        globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+        logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+        bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+        print: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+        utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+        pause: '<circle cx="12" cy="12" r="10"/><line x1="10" x2="10" y1="15" y2="9"/><line x1="14" x2="14" y1="15" y2="9"/>',
+        alert: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+        dot: '<circle cx="12" cy="12" r="6"/>'
+      };
+
+      const EMOJI_TO_KEY = {
+        '📍': 'pin', '🗺️': 'pin',
+        '🎯': 'target',
+        '🌐': 'globe',
+        '🏠': 'home',
+        '🏢': 'building', '🏨': 'building', '💼': 'building',
+        '🏪': 'store',
+        '👤': 'user', '👨‍🍳': 'user',
+        '👥': 'users',
+        '👑': 'shield', '🛡️': 'shield',
+        '🛒': 'cart',
+        '🛍️': 'bag',
+        '📦': 'box',
+        '🧾': 'receipt', '📋': 'receipt', '📝': 'receipt', '📚': 'receipt',
+        '📞': 'phone',
+        '📲': 'smartphone', '📱': 'smartphone',
+        '📧': 'mail',
+        '💬': 'chat',
+        '🔐': 'lock', '🔒': 'lock',
+        '🔓': 'unlock',
+        '🔑': 'key',
+        '🔍': 'search',
+        '✏️': 'edit',
+        '🗑️': 'trash',
+        '🔄': 'refresh',
+        '💾': 'save',
+        '➕': 'plus',
+        '✓': 'check', '✅': 'check', '🎉': 'check',
+        '⭐': 'star', '★': 'star', '✨': 'star',
+        '❤️': 'heart',
+        '🎓': 'grad',
+        '🛵': 'bike', '🚲': 'bike', '🏋️': 'zap',
+        '🚗': 'car',
+        '⚡': 'zap', '🔋': 'zap',
+        '💵': 'cash',
+        '💳': 'card',
+        '🚪': 'logout',
+        '🔔': 'bell', '🛎️': 'bell',
+        '🖨️': 'print',
+        '🍔': 'utensils', '🍕': 'utensils', '🍽️': 'utensils',
+        '⏸️': 'pause',
+        '🚫': 'alert', '⚠️': 'alert', 'ℹ️': 'alert',
+        '🟢': 'dot', '🟡': 'dot', '🔴': 'dot', '🏷️': 'pin'
+      };
+
+      const EMOJI_KEYS = Object.keys(EMOJI_TO_KEY).sort((a, b) => b.length - a.length);
+      const EMOJI_REGEX = new RegExp('(' + EMOJI_KEYS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'g');
+
+      function makeSvgHtml(key) {
+        const path = SVG_PATHS[key] || SVG_PATHS.dot;
+        return '<svg class="pn-uni-icon" viewBox="0 0 24 24" aria-hidden="true">' + path + '</svg>';
+      }
+
+      function normalizeIconsInRoot(root) {
+        if (!root) return;
+
+        // 1. En <option> de <select>, reemplazar emojis multicolores por viñeta monocromática limpia
+        const options = root.querySelectorAll ? root.querySelectorAll('option') : [];
+        options.forEach(opt => {
+          if (opt.text && EMOJI_REGEX.test(opt.text)) {
+            opt.text = opt.text.replace(EMOJI_REGEX, '▸ ').replace(/\s+/g, ' ').trim();
+          }
+        });
+
+        // 2. Recorrer nodos de texto para reemplazar emojis por iconos SVG uniformes (#06C167)
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: function(node) {
+            const p = node.parentNode;
+            if (!p) return NodeFilter.FILTER_REJECT;
+            const tag = p.nodeName.toUpperCase();
+            if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA' || tag === 'OPTION' || tag === 'TITLE') {
+              return NodeFilter.FILTER_REJECT;
+            }
+            if (node.nodeValue && EMOJI_REGEX.test(node.nodeValue)) {
+              return NodeFilter.FILTER_ACCEPT;
+            }
+            return NodeFilter.FILTER_SKIP;
+          }
+        });
+
+        const textNodes = [];
+        let current;
+        while ((current = walker.nextNode())) {
+          textNodes.push(current);
+        }
+
+        textNodes.forEach(tNode => {
+          const val = tNode.nodeValue;
+          if (!val || !EMOJI_REGEX.test(val)) return;
+          const span = document.createElement('span');
+          span.className = 'inline-flex items-center gap-1';
+          span.innerHTML = val.replace(EMOJI_REGEX, function(match) {
+            const key = EMOJI_TO_KEY[match] || 'dot';
+            return makeSvgHtml(key);
+          });
+          if (tNode.parentNode) {
+            tNode.parentNode.replaceChild(span, tNode);
+          }
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        normalizeIconsInRoot(document.body);
+        const obs = new MutationObserver(function(mutations) {
+          mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(n) {
+              if (n.nodeType === 1) {
+                normalizeIconsInRoot(n);
+              } else if (n.nodeType === 3 && n.parentNode) {
+                normalizeIconsInRoot(n.parentNode);
+              }
+            });
+          });
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+      });
+    })();
+  </script>
+
+  <!-- BOTÓN FLOTANTE Y MODAL GLOBAL DE ACCESO MÓVIL (LAN + TÚNEL QR) -->
+  <button id="pnMobileAccessFab" onclick="window.openMobileAccessModal()" class="fixed bottom-4 left-4 z-40 px-3.5 py-2 rounded-2xl bg-[#121212]/95 hover:bg-[#1C1C1C] border border-[#06C167]/50 text-white shadow-2xl flex items-center gap-2 text-xs font-bold transition-all backdrop-blur-md">
+    <span>📲</span>
+    <span>Abrir en Teléfono / QR</span>
+  </button>
+
+  <div id="pnMobileAccessModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#121212] border-2 border-[#06C167]/40 rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto text-xs">
+      <div class="flex items-center justify-between pb-3 border-b border-[#262626]">
+        <div class="flex items-center gap-2.5">
+          <span class="p-2.5 rounded-2xl bg-[#06C167]/15 text-[#06C167] text-lg">📲</span>
+          <div>
+            <h3 class="text-base font-black text-white">Acceso desde tu Teléfono a Todas las Apps</h3>
+            <p class="text-[11px] text-[#A6A6A6]">Escanea el código QR con la cámara de tu teléfono o abre el enlace directo</p>
+          </div>
+        </div>
+        <button onclick="window.closeMobileAccessModal()" class="text-[#A6A6A6] hover:text-white text-base p-1.5">✕</button>
+      </div>
+
+      <!-- Explicación de por qué 'localhost' no abre en el teléfono -->
+      <div class="p-3.5 rounded-2xl bg-[#191919] border border-[#2E2E2E] space-y-1.5">
+        <p class="font-bold text-[#06C167] flex items-center gap-1.5">
+          <span>ℹ️</span> ¿Por qué <code class="bg-black px-1.5 py-0.5 rounded text-white font-mono">localhost:3000</code> no abre en el teléfono?
+        </p>
+        <p class="text-[11px] text-[#A6A6A6] leading-relaxed">
+          En cualquier teléfono, la palabra <code class="text-white font-mono">localhost</code> apunta al propio teléfono y no a tu computadora. Para entrar desde tu celular tienes <strong>2 opciones activas ahora mismo</strong>:
+        </p>
+      </div>
+
+      <!-- Selector de Modo de Conexión -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button id="btnModeLan" onclick="window.setMobileQrMode('lan')" class="p-3.5 rounded-2xl border-2 border-[#06C167] bg-[#06C167]/10 text-left transition-all">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-white text-xs flex items-center gap-1.5"><span>🌐</span> Opción 1: Red Wi-Fi Local (LAN)</span>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#06C167] text-black uppercase">Misma Red</span>
+          </div>
+          <p class="font-mono text-[#06C167] text-xs font-bold mt-1" id="lblLanBaseUrl">http://192.168.1.20:3000</p>
+          <p class="text-[10px] text-[#A6A6A6] mt-0.5">Conexión directa por tu Wi-Fi local sin consumir internet.</p>
+        </button>
+
+        <button id="btnModeTunnel" onclick="window.setMobileQrMode('tunnel')" class="p-3.5 rounded-2xl border-2 border-[#2E2E2E] bg-[#191919] text-left transition-all">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-white text-xs flex items-center gap-1.5"><span>⚡</span> Opción 2: Túnel HTTPS Universal</span>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#06C167]/20 text-[#06C167] border border-[#06C167]/40 uppercase">Anti-Bloqueo + GPS</span>
+          </div>
+          <p class="font-mono text-[#06C167] text-xs font-bold mt-1 truncate" id="lblTunnelBaseUrl">https://1de3b77b254e8b.lhr.life</p>
+          <p class="text-[10px] text-[#A6A6A6] mt-0.5">Úsalo si tu router Wi-Fi aísla dispositivos (AP Isolation) o si usas Datos 4G.</p>
+        </button>
+      </div>
+
+      <!-- Cuadrícula de las 4 Apps con QR y Descarga de APK -->
+      <div id="mobileAppsQrGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1"></div>
+
+      <!-- Sección de Auto-Actualización y Publicación en GitHub Releases -->
+      <div class="p-4 rounded-2xl bg-[#181C24] border border-[#06C167]/30 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="text-xs font-black text-white flex items-center gap-1.5">
+              <span>🔄</span>
+              <span>Motor de Auto-Actualización & GitHub Releases</span>
+              <span id="lblCurrentAppVersion" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-[#06C167] text-black">v1.2.0</span>
+            </div>
+            <p class="text-[11px] text-[#A6A6A6] mt-0.5">
+              Repositorio conectado: <a href="https://github.com/darthriuk/PedidosNica/releases" target="_blank" class="text-[#06C167] font-mono underline">github.com/darthriuk/PedidosNica</a>
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="window.checkGitHubReleaseUpdate(true)" class="px-3 py-1.5 rounded-xl bg-[#242C3A] hover:bg-[#2E384A] text-white font-bold text-[11px] border border-[#3A465E] transition-colors flex items-center gap-1">
+              <span>🔍</span> Buscar Actualización
+            </button>
+            <a href="https://github.com/darthriuk/PedidosNica/releases/latest" target="_blank" class="px-3 py-1.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-[11px] transition-colors">
+              Ver Releases ↗
+            </a>
+          </div>
+        </div>
+        <div id="githubReleaseStatusBox" class="text-[11px] text-[#A6A6A6] font-mono bg-black/50 p-2.5 rounded-xl border border-[#262626]">
+          Verificando estado de compilación y última versión en GitHub...
+        </div>
+
+        <!-- Publicador de Nueva Versión en 1 Clic -->
+        <div class="pt-2 border-t border-[#262E3D] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input type="text" id="inpNewReleaseVersion" placeholder="Nueva versión (ej: 1.0.1)" class="bg-black border border-[#2E384A] focus:border-[#06C167] rounded-xl px-3 py-1.5 text-xs text-white font-mono outline-none sm:w-44" />
+          <input type="text" id="inpNewReleaseNotes" placeholder="Notas del cambio (ej: Mejoras en catálogo y despacho)" class="bg-black border border-[#2E384A] focus:border-[#06C167] rounded-xl px-3 py-1.5 text-xs text-white outline-none flex-1" />
+          <button id="btnPublishGitHubUpdate" onclick="window.publishNewGitHubUpdate()" class="px-3.5 py-1.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs transition-all shrink-0">
+            🚀 Subir y Compilar Release
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANNER SUPERIOR DE AUTO-ACTUALIZACIÓN EN TIEMPO REAL -->
+  <div id="pnAutoUpdateBanner" class="hidden fixed top-3 inset-x-4 max-w-xl mx-auto z-50 p-3.5 rounded-2xl bg-[#12161F]/95 border-2 border-[#06C167] shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 text-xs">
+    <div class="flex items-center gap-2.5">
+      <span class="p-2 rounded-xl bg-[#06C167]/20 text-[#06C167] text-base">🚀</span>
+      <div>
+        <p class="font-black text-white" id="pnUpdateBannerTitle">¡Nueva versión disponible!</p>
+        <p class="text-[11px] text-[#A6A6A6] line-clamp-1" id="pnUpdateBannerDesc">Se ha detectado una nueva actualización en GitHub Releases.</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <a id="pnUpdateBannerApkBtn" href="https://github.com/darthriuk/PedidosNica/releases/latest" target="_blank" class="px-3 py-1.5 rounded-xl bg-[#06C167] text-black font-black text-[11px]">
+        Actualizar APK
+      </a>
+      <button onclick="window.location.reload(true)" class="px-2.5 py-1.5 rounded-xl bg-[#242C3A] text-white font-bold text-[11px]">
+        Recargar
+      </button>
+      <button onclick="document.getElementById('pnAutoUpdateBanner').classList.add('hidden')" class="text-[#A6A6A6] hover:text-white p-1">✕</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const GITHUB_REPO = 'darthriuk/PedidosNica';
+      const INSTALLED_VERSION = '1.2.0';
+      const NET_INFO = {
+        lanBaseUrl: 'http://192.168.1.20:3000',
+        tunnelBaseUrl: 'https://1de3b77b254e8b.lhr.life'
+      };
+      let currentQrMode = 'lan';
+
+      const APPS = [
+        { id: 'client', title: 'App Clientes', subtitle: 'Catálogo, Carrito y Tracking', path: '/client', icon: '🍔', apkName: 'PedidosNica-Cliente.apk' },
+        { id: 'driver', title: 'App Repartidor', subtitle: 'Radar GPS y Bolsa de Pedidos', path: '/driver', icon: '🛵', apkName: 'PedidosNica-Repartidor.apk' },
+        { id: 'restaurant', title: 'Suite Restaurante', subtitle: 'Comandas KDS y Menú', path: '/restaurant', icon: '🏪', apkName: 'PedidosNica-Restaurante.apk' },
+        { id: 'hub', title: 'Central Hub', subtitle: 'App Manager & Usuarios IAM', path: '/', icon: '🛡️', apkName: null }
+      ];
+
+      function getCurrentPortalApkUrl() {
+        const p = window.location.pathname;
+        if (p.startsWith('/driver')) return 'https://github.com/' + GITHUB_REPO + '/releases/latest/download/PedidosNica-Repartidor.apk';
+        if (p.startsWith('/restaurant')) return 'https://github.com/' + GITHUB_REPO + '/releases/latest/download/PedidosNica-Restaurante.apk';
+        return 'https://github.com/' + GITHUB_REPO + '/releases/latest/download/PedidosNica-Cliente.apk';
+      }
+
+      function renderMobileQrCards() {
+        const grid = document.getElementById('mobileAppsQrGrid');
+        if (!grid) return;
+        const base = currentQrMode === 'lan' ? NET_INFO.lanBaseUrl : NET_INFO.tunnelBaseUrl;
+
+        const btnLan = document.getElementById('btnModeLan');
+        const btnTunnel = document.getElementById('btnModeTunnel');
+        if (btnLan && btnTunnel) {
+          if (currentQrMode === 'lan') {
+            btnLan.className = 'p-3.5 rounded-2xl border-2 border-[#06C167] bg-[#06C167]/10 text-left transition-all';
+            btnTunnel.className = 'p-3.5 rounded-2xl border-2 border-[#2E2E2E] bg-[#191919] text-left transition-all';
+          } else {
+            btnTunnel.className = 'p-3.5 rounded-2xl border-2 border-[#06C167] bg-[#06C167]/10 text-left transition-all';
+            btnLan.className = 'p-3.5 rounded-2xl border-2 border-[#2E2E2E] bg-[#191919] text-left transition-all';
+          }
+        }
+
+        grid.innerHTML = APPS.map(function(app) {
+          const fullUrl = base + app.path;
+          const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=' + encodeURIComponent(fullUrl);
+          const apkDownloadUrl = app.apkName ? ('https://github.com/' + GITHUB_REPO + '/releases/latest/download/' + app.apkName) : null;
+          return '<div class="p-3.5 rounded-2xl bg-[#191919] border border-[#2E2E2E] flex flex-col items-center text-center justify-between gap-2.5">' +
+            '<div class="w-full">' +
+              '<div class="text-sm font-black text-white flex items-center justify-center gap-1.5"><span>' + app.icon + '</span> <span>' + app.title + '</span></div>' +
+              '<p class="text-[10px] text-[#A6A6A6] mt-0.5">' + app.subtitle + '</p>' +
+            '</div>' +
+            '<div class="bg-white p-2 rounded-xl shadow-md">' +
+              '<img src="' + qrSrc + '" alt="QR ' + app.title + '" class="w-32 h-32 object-contain" loading="lazy" />' +
+            '</div>' +
+            '<div class="w-full space-y-1.5">' +
+              '<input type="text" readonly value="' + fullUrl + '" onclick="this.select()" class="w-full bg-black border border-[#2E2E2E] rounded-lg px-2 py-1 text-[10px] font-mono text-[#06C167] text-center outline-none" />' +
+              '<div class="flex gap-1.5">' +
+                '<button onclick="navigator.clipboard.writeText(\'' + fullUrl + '\'); this.textContent=\'¡Copiado!\'; setTimeout(()=>this.textContent=\'Copiar Link\', 1500)" class="flex-1 py-1.5 rounded-lg bg-[#242424] hover:bg-[#2E2E2E] text-white font-bold text-[10px] transition-colors">Copiar Link</button>' +
+                '<a href="' + fullUrl + '" target="_blank" class="py-1.5 px-2.5 rounded-lg bg-[#06C167] text-black font-black text-[10px]">Abrir ↗</a>' +
+              '</div>' +
+              (apkDownloadUrl ? (
+                '<a href="' + apkDownloadUrl + '" target="_blank" class="block w-full py-1.5 rounded-lg bg-[#06C167]/15 hover:bg-[#06C167]/25 border border-[#06C167]/40 text-[#06C167] font-black text-[10px] transition-colors">📲 Descargar ' + app.apkName + '</a>'
+              ) : '') +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      window.checkGitHubReleaseUpdate = async function(manual) {
+        const statusBox = document.getElementById('githubReleaseStatusBox');
+        if (manual && statusBox) {
+          statusBox.textContent = 'Consultando GitHub Releases (' + GITHUB_REPO + ')...';
+        }
+        try {
+          // 1. Consultar endpoint local y GitHub Releases
+          const res = await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/releases/latest', {
+            headers: { 'Accept': 'application/vnd.github+json' }
+          });
+          if (res.ok) {
+            const release = await res.json();
+            const latestTag = (release.tag_name || '').replace(/^v/i, '');
+            const assetsCount = Array.isArray(release.assets) ? release.assets.length : 0;
+            if (statusBox) {
+              statusBox.innerHTML = '✅ Último Release en GitHub: <strong class="text-[#06C167]">v' + latestTag + '</strong> (' + assetsCount + ' paquetes compilados listos) • Publicado: ' + new Date(release.published_at).toLocaleString();
+            }
+            const seenTag = localStorage.getItem('pn_seen_release_version') || INSTALLED_VERSION;
+            if (latestTag && latestTag !== INSTALLED_VERSION && latestTag !== seenTag) {
+              const banner = document.getElementById('pnAutoUpdateBanner');
+              const titleEl = document.getElementById('pnUpdateBannerTitle');
+              const descEl = document.getElementById('pnUpdateBannerDesc');
+              const apkBtn = document.getElementById('pnUpdateBannerApkBtn');
+              if (banner && titleEl && descEl && apkBtn) {
+                titleEl.textContent = '🚀 Nueva Actualización Disponible (v' + latestTag + ')';
+                descEl.textContent = release.name || 'Nueva versión compilada en GitHub Releases lista para instalar.';
+                apkBtn.href = getCurrentPortalApkUrl();
+                banner.classList.remove('hidden');
+              }
+            } else if (manual) {
+              alert('✅ Estás en la versión más reciente (v' + (latestTag || INSTALLED_VERSION) + ').\n\nPuedes descargar los 3 archivos .APK directamente desde las tarjetas de abajo.');
+            }
+          } else {
+            if (statusBox) {
+              statusBox.innerHTML = '⚙️ GitHub Actions compilando versión inicial <strong class="text-[#06C167]">v' + INSTALLED_VERSION + '</strong> en <a href="https://github.com/' + GITHUB_REPO + '/actions" target="_blank" class="underline text-white">github.com/' + GITHUB_REPO + '/actions</a>...';
+            }
+          }
+        } catch (_) {
+          if (statusBox) {
+            statusBox.textContent = 'Versión activa local: v' + INSTALLED_VERSION + ' • Sincronizado con ' + GITHUB_REPO;
+          }
+        }
+      };
+
+      window.publishNewGitHubUpdate = async function() {
+        const verInput = document.getElementById('inpNewReleaseVersion');
+        const notesInput = document.getElementById('inpNewReleaseNotes');
+        const btn = document.getElementById('btnPublishGitHubUpdate');
+        const statusBox = document.getElementById('githubReleaseStatusBox');
+        const newVersion = verInput && verInput.value.trim() ? verInput.value.trim() : '';
+        const changelog = notesInput && notesInput.value.trim() ? notesInput.value.trim() : 'Actualización de plataforma PedidosNica';
+
+        if (!newVersion) {
+          alert('Ingresa el número de la nueva versión (por ejemplo: 1.0.1)');
+          return;
+        }
+
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Subiendo a GitHub...';
+        }
+        if (statusBox) {
+          statusBox.innerHTML = '⏳ Subiendo cambios al repositorio <strong class="text-[#06C167]">' + GITHUB_REPO + '</strong> y disparando compilación de APKs (v' + newVersion + ')...';
+        }
+
+        try {
+          const res = await fetch('/api/github/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newVersion: newVersion, changelog: changelog })
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            throw new Error(data.error || 'Error al publicar en GitHub');
+          }
+          if (statusBox) {
+            statusBox.innerHTML = '✅ Versión <strong class="text-[#06C167]">v' + data.versionInfo.version + '</strong> subida (' + data.filesUploaded + ' archivos). GitHub Actions está compilando los 3 APKs ahora mismo en <a href="' + data.actionsUrl + '" target="_blank" class="underline text-white">Ver Progreso ↗</a>';
+          }
+          const lblVer = document.getElementById('lblCurrentAppVersion');
+          if (lblVer) lblVer.textContent = 'v' + data.versionInfo.version;
+          if (verInput) verInput.value = '';
+          if (notesInput) notesInput.value = '';
+        } catch (err) {
+          if (statusBox) {
+            statusBox.innerHTML = '❌ Error: ' + err.message;
+          }
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🚀 Subir y Compilar Release';
+          }
+        }
+      };
+
+      window.setMobileQrMode = function(mode) {
+        currentQrMode = mode;
+        renderMobileQrCards();
+      };
+
+      window.openMobileAccessModal = function(defaultMode) {
+        if (defaultMode) currentQrMode = defaultMode;
+        const modal = document.getElementById('pnMobileAccessModal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          renderMobileQrCards();
+          window.checkGitHubReleaseUpdate(false);
+        }
+      };
+
+      window.closeMobileAccessModal = function() {
+        const modal = document.getElementById('pnMobileAccessModal');
+        if (modal) modal.classList.add('hidden');
+      };
+
+      // Verificar automáticamente al abrir cualquier aplicación y cada 60 segundos
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() { window.checkGitHubReleaseUpdate(false); }, 1500);
+        setInterval(function() { window.checkGitHubReleaseUpdate(false); }, 60000);
+      });
+    })();
+  </script>
+</body></html>

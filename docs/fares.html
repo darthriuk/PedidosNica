@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <script src="embeddedBackend.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Tarifas y Comisión de la Plataforma - Super Admin | PedidosNica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            uber: {
+              green: '#06C167',
+              greenHover: '#05A357',
+              greenLight: 'rgba(6, 193, 103, 0.12)',
+              black: '#000000',
+              dark: '#121212',
+              card: '#1C1C1C',
+              surface: '#242424',
+              border: '#2E2E2E',
+              subtext: '#A6A6A6',
+              light: '#F6F6F6'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta name="theme-color" content="#06C167">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PedidosNica">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        Promise.resolve().catch(function() {});
+      });
+    }
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const btn = document.getElementById('floatingInstallBtn');
+      if (btn) btn.classList.remove('hidden');
+    });
+    window.triggerPWAInstall = function() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(() => {
+          deferredInstallPrompt = null;
+          const btn = document.getElementById('floatingInstallBtn');
+          if (btn) btn.classList.add('hidden');
+        });
+      } else {
+        alert("Para instalar en tu teléfono:
+Toca el menú de 3 puntos (⋮) en la esquina superior de Chrome y selecciona 'Instalar aplicación' o 'Agregar a la pantalla principal'.");
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #000000;
+      color: #FFFFFF;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Estilos de scrollbar suave */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #121212;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2E2E2E;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06C167;
+    }
+    /* Estilos de Impresión para Ticket Térmico de Cocina (80mm) */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printableThermalTicket, #printableThermalTicket * {
+        visibility: visible !important;
+      }
+      #printableThermalTicket {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 78mm !important;
+        max-width: 80mm !important;
+        margin: 0 !important;
+        padding: 3mm !important;
+        background: white !important;
+        color: black !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      #printableThermalTicket .no-print {
+        display: none !important;
+      }
+    }
+
+    /* ===================================================================== */
+    /* SISTEMA GLOBAL DE ICONOGRAFÍA MONOCROMÁTICA UNIFORME (#06C167)        */
+    /* ===================================================================== */
+    .pn-uni-icon {
+      display: inline-block;
+      width: 1.1em;
+      height: 1.1em;
+      vertical-align: -0.18em;
+      color: #06C167 !important;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    /* Contraste uniforme cuando el icono está dentro de un botón verde activo */
+    .bg-[#06C167] .pn-uni-icon,
+    button.bg-[#06C167] .pn-uni-icon,
+    a.bg-[#06C167] .pn-uni-icon,
+    .text-black > .pn-uni-icon,
+    .text-black .pn-uni-icon {
+      color: #000000 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-black text-white antialiased selection:bg-[#06C167] selection:text-black">
+  <div class="p-8 max-w-5xl mx-auto">
+    <div class="flex items-center justify-between pb-6 mb-8 border-b border-slate-800">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-bold uppercase tracking-wider">
+            Super Admin
+          </span>
+          <a href="/admin/control-tower" class="text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+            ← Ir a Torre de Control
+          </a>
+        </div>
+        <h1 class="text-3xl font-black text-white tracking-tight">Reglas Económicas, Geocercas y Comisión</h1>
+        <p class="text-xs text-slate-400 mt-1">Configuración central del modelo de negocio para los comercios y clientes</p>
+      </div>
+      <a href="/" class="text-xs text-slate-400 hover:text-white px-3 py-2 rounded-xl bg-slate-900 border border-slate-800">
+        Salir
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-6 space-y-4 shadow-xl">
+        <h2 class="text-lg font-bold text-white mb-2">Parámetros Económicos Globales</h2>
+        
+        <!-- CAMPO EXCLUSIVO: MODIFICAR PORCENTAJE DE COMISIÓN DE LA PLATAFORMA -->
+        <div class="p-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl">
+          <label class="block text-xs uppercase font-extrabold text-amber-300 mb-1 flex items-center justify-between">
+            <span>% Comisión por Pedido a Comercios</span>
+            <span class="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded">Exclusivo Plataforma</span>
+          </label>
+          <div class="flex items-center gap-3">
+            <input type="number" id="commissionRate" value="15" step="0.5" min="1.0" max="40.0" oninput="updateCommissionState(this.value)" class="w-full bg-slate-950 border border-amber-500/50 rounded-xl p-3 text-amber-300 font-mono font-bold text-base focus:outline-none" />
+            <span class="text-amber-300 font-black text-lg">%</span>
+          </div>
+          <p class="text-[11px] text-amber-200/70 mt-1.5">
+            Este porcentaje se aplicará y mostrará inmediatamente a los comercios al afiliarse y en cada liquidación.
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 uppercase font-semibold mb-1.5">Tarifa Base ($)</label>
+          <input type="number" id="baseFare" value="1.50" step="0.10" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 uppercase font-semibold mb-1.5">Por Km ($)</label>
+            <input type="number" id="perKm" value="0.65" step="0.05" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 uppercase font-semibold mb-1.5">Por Minuto ($)</label>
+            <input type="number" id="perMin" value="0.15" step="0.05" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-indigo-400 uppercase font-semibold mb-1.5">Surge Multiplier (Demanda / Lluvia)</label>
+          <input type="number" id="surge" value="1.25" step="0.05" oninput="calculate()" class="w-full bg-slate-950 border border-indigo-500/40 rounded-xl p-3 text-indigo-300 font-bold text-sm" />
+        </div>
+        <button onclick="savePlatformSettings()" id="btnSaveParams" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3.5 rounded-xl transition-all shadow-lg text-sm mt-4">
+          Guardar Parámetros y Comisión en Supabase
+        </button>
+        <p id="saveNotice" class="text-xs text-emerald-400 font-bold text-center hidden">
+          ✓ ¡Parámetros de comisión y tarifas actualizados exitosamente!
+        </p>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+        <div>
+          <h2 class="text-lg font-bold text-white mb-1">Simulador de Cotización al Cliente</h2>
+          <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+            Respuesta del motor según distancia vial OSRM, tiempo y recargo de demanda.
+          </p>
+
+          <div class="space-y-5">
+            <div>
+              <div class="flex justify-between text-xs text-slate-300 mb-1.5">
+                <span>Distancia OSRM:</span>
+                <span class="font-mono text-indigo-400 font-bold text-sm" id="lblKm">4.5 km</span>
+              </div>
+              <input type="range" id="sliderKm" min="0.5" max="15.0" step="0.1" value="4.5" oninput="calculate()" class="w-full accent-indigo-500 cursor-pointer" />
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-slate-300 mb-1.5">
+                <span>Tiempo de Viaje:</span>
+                <span class="font-mono text-indigo-400 font-bold text-sm" id="lblMin">18 mins</span>
+              </div>
+              <input type="range" id="sliderMin" min="3" max="60" step="1" value="18" oninput="calculate()" class="w-full accent-indigo-500 cursor-pointer" />
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 p-6 bg-slate-950 border border-slate-800 rounded-2xl text-center">
+          <p class="text-xs uppercase font-semibold text-slate-400 tracking-wider">Costo Final Cobrado al Cliente</p>
+          <p class="text-4xl font-extrabold text-emerald-400 font-mono my-2 tracking-tight" id="totalFee">$8.90</p>
+          <p class="text-xs text-slate-500">Costo de API de Mapas para este cálculo: <strong class="text-emerald-400 font-semibold">$0.00</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function calculate() {
+      const base = parseFloat(document.getElementById('baseFare').value) || 0;
+      const perKm = parseFloat(document.getElementById('perKm').value) || 0;
+      const perMin = parseFloat(document.getElementById('perMin').value) || 0;
+      const surge = parseFloat(document.getElementById('surge').value) || 1;
+
+      const km = parseFloat(document.getElementById('sliderKm').value);
+      const min = parseFloat(document.getElementById('sliderMin').value);
+
+      document.getElementById('lblKm').innerText = km.toFixed(1) + ' km';
+      document.getElementById('lblMin').innerText = min + ' mins';
+
+      const raw = base + (km * perKm) + (min * perMin);
+      const total = (raw * surge).toFixed(2);
+
+      document.getElementById('totalFee').innerText = '$' + total;
+    }
+
+    async function updateCommissionState(val) {
+      try {
+        await fetch('/api/admin/commission', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commission_rate: parseFloat(val) })
+        });
+      } catch(e) {}
+    }
+
+    function savePlatformSettings() {
+      const val = document.getElementById('commissionRate').value;
+      updateCommissionState(val);
+      const notice = document.getElementById('saveNotice');
+      notice.classList.remove('hidden');
+      setTimeout(() => notice.classList.add('hidden'), 3000);
+    }
+
+    calculate();
+  </script>
+  
+  <script>
+    (function() {
+      // Catálogo de vectores monocromáticos uniformes (Estilo Lucide / Uber Eats)
+      const SVG_PATHS = {
+        pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+        home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+        building: '<rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>',
+        store: '<path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/>',
+        user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+        users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        cart: '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+        bag: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+        box: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+        receipt: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>',
+        phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+        smartphone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+        mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+        chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+        lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+        unlock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+        key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+        shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+        search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+        edit: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+        trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+        refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/>',
+        save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+        plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+        check: '<polyline points="20 6 9 17 4 12"/>',
+        star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+        grad: '<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>',
+        bike: '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+        car: '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+        zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+        cash: '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
+        card: '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+        target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+        globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+        logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+        bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+        print: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+        utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+        pause: '<circle cx="12" cy="12" r="10"/><line x1="10" x2="10" y1="15" y2="9"/><line x1="14" x2="14" y1="15" y2="9"/>',
+        alert: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+        dot: '<circle cx="12" cy="12" r="6"/>'
+      };
+
+      const EMOJI_TO_KEY = {
+        '📍': 'pin', '🗺️': 'pin',
+        '🎯': 'target',
+        '🌐': 'globe',
+        '🏠': 'home',
+        '🏢': 'building', '🏨': 'building', '💼': 'building',
+        '🏪': 'store',
+        '👤': 'user', '👨‍🍳': 'user',
+        '👥': 'users',
+        '👑': 'shield', '🛡️': 'shield',
+        '🛒': 'cart',
+        '🛍️': 'bag',
+        '📦': 'box',
+        '🧾': 'receipt', '📋': 'receipt', '📝': 'receipt', '📚': 'receipt',
+        '📞': 'phone',
+        '📲': 'smartphone', '📱': 'smartphone',
+        '📧': 'mail',
+        '💬': 'chat',
+        '🔐': 'lock', '🔒': 'lock',
+        '🔓': 'unlock',
+        '🔑': 'key',
+        '🔍': 'search',
+        '✏️': 'edit',
+        '🗑️': 'trash',
+        '🔄': 'refresh',
+        '💾': 'save',
+        '➕': 'plus',
+        '✓': 'check', '✅': 'check', '🎉': 'check',
+        '⭐': 'star', '★': 'star', '✨': 'star',
+        '❤️': 'heart',
+        '🎓': 'grad',
+        '🛵': 'bike', '🚲': 'bike', '🏋️': 'zap',
+        '🚗': 'car',
+        '⚡': 'zap', '🔋': 'zap',
+        '💵': 'cash',
+        '💳': 'card',
+        '🚪': 'logout',
+        '🔔': 'bell', '🛎️': 'bell',
+        '🖨️': 'print',
+        '🍔': 'utensils', '🍕': 'utensils', '🍽️': 'utensils',
+        '⏸️': 'pause',
+        '🚫': 'alert', '⚠️': 'alert', 'ℹ️': 'alert',
+        '🟢': 'dot', '🟡': 'dot', '🔴': 'dot', '🏷️': 'pin'
+      };
+
+      const EMOJI_KEYS = Object.keys(EMOJI_TO_KEY).sort((a, b) => b.length - a.length);
+      const EMOJI_REGEX = new RegExp('(' + EMOJI_KEYS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'g');
+
+      function makeSvgHtml(key) {
+        const path = SVG_PATHS[key] || SVG_PATHS.dot;
+        return '<svg class="pn-uni-icon" viewBox="0 0 24 24" aria-hidden="true">' + path + '</svg>';
+      }
+
+      function normalizeIconsInRoot(root) {
+        if (!root) return;
+
+        // 1. En <option> de <select>, reemplazar emojis multicolores por viñeta monocromática limpia
+        const options = root.querySelectorAll ? root.querySelectorAll('option') : [];
+        options.forEach(opt => {
+          if (opt.text && EMOJI_REGEX.test(opt.text)) {
+            opt.text = opt.text.replace(EMOJI_REGEX, '▸ ').replace(/\s+/g, ' ').trim();
+          }
+        });
+
+        // 2. Recorrer nodos de texto para reemplazar emojis por iconos SVG uniformes (#06C167)
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: function(node) {
+            const p = node.parentNode;
+            if (!p) return NodeFilter.FILTER_REJECT;
+            const tag = p.nodeName.toUpperCase();
+            if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA' || tag === 'OPTION' || tag === 'TITLE') {
+              return NodeFilter.FILTER_REJECT;
+            }
+            if (node.nodeValue && EMOJI_REGEX.test(node.nodeValue)) {
+              return NodeFilter.FILTER_ACCEPT;
+            }
+            return NodeFilter.FILTER_SKIP;
+          }
+        });
+
+        const textNodes = [];
+        let current;
+        while ((current = walker.nextNode())) {
+          textNodes.push(current);
+        }
+
+        textNodes.forEach(tNode => {
+          const val = tNode.nodeValue;
+          if (!val || !EMOJI_REGEX.test(val)) return;
+          const span = document.createElement('span');
+          span.className = 'inline-flex items-center gap-1';
+          span.innerHTML = val.replace(EMOJI_REGEX, function(match) {
+            const key = EMOJI_TO_KEY[match] || 'dot';
+            return makeSvgHtml(key);
+          });
+          if (tNode.parentNode) {
+            tNode.parentNode.replaceChild(span, tNode);
+          }
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        normalizeIconsInRoot(document.body);
+        const obs = new MutationObserver(function(mutations) {
+          mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(n) {
+              if (n.nodeType === 1) {
+                normalizeIconsInRoot(n);
+              } else if (n.nodeType === 3 && n.parentNode) {
+                normalizeIconsInRoot(n.parentNode);
+              }
+            });
+          });
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+      });
+    })();
+  </script>
+
+  <!-- BOTÓN FLOTANTE Y MODAL GLOBAL DE ACCESO MÓVIL (LAN + TÚNEL QR) -->
+  <button id="pnMobileAccessFab" onclick="window.openMobileAccessModal()" class="fixed bottom-4 left-4 z-40 px-3.5 py-2 rounded-2xl bg-[#121212]/95 hover:bg-[#1C1C1C] border border-[#06C167]/50 text-white shadow-2xl flex items-center gap-2 text-xs font-bold transition-all backdrop-blur-md">
+    <span>📲</span>
+    <span>Abrir en Teléfono / QR</span>
+  </button>
+
+  <div id="pnMobileAccessModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#121212] border-2 border-[#06C167]/40 rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto text-xs">
+      <div class="flex items-center justify-between pb-3 border-b border-[#262626]">
+        <div class="flex items-center gap-2.5">
+          <span class="p-2.5 rounded-2xl bg-[#06C167]/15 text-[#06C167] text-lg">📲</span>
+          <div>
+            <h3 class="text-base font-black text-white">Acceso desde tu Teléfono a Todas las Apps</h3>
+            <p class="text-[11px] text-[#A6A6A6]">Escanea el código QR con la cámara de tu teléfono o abre el enlace directo</p>
+          </div>
+        </div>
+        <button onclick="window.closeMobileAccessModal()" class="text-[#A6A6A6] hover:text-white text-base p-1.5">✕</button>
+      </div>
+
+      <!-- Explicación de por qué 'localhost' no abre en el teléfono -->
+      <div class="p-3.5 rounded-2xl bg-[#191919] border border-[#2E2E2E] space-y-1.5">
+        <p class="font-bold text-[#06C167] flex items-center gap-1.5">
+          <span>ℹ️</span> ¿Por qué <code class="bg-black px-1.5 py-0.5 rounded text-white font-mono">localhost:3000</code> no abre en el teléfono?
+        </p>
+        <p class="text-[11px] text-[#A6A6A6] leading-relaxed">
+          En cualquier teléfono, la palabra <code class="text-white font-mono">localhost</code> apunta al propio teléfono y no a tu computadora. Para entrar desde tu celular tienes <strong>2 opciones activas ahora mismo</strong>:
+        </p>
+      </div>
+
+      <!-- Selector de Modo de Conexión -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button id="btnModeLan" onclick="window.setMobileQrMode('lan')" class="p-3.5 rounded-2xl border-2 border-[#06C167] bg-[#06C167]/10 text-left transition-all">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-white text-xs flex items-center gap-1.5"><span>🌐</span> Opción 1: Red Wi-Fi Local (LAN)</span>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#06C167] text-black uppercase">Misma Red</span>
+          </div>
+          <p class="font-mono text-[#06C167] text-xs font-bold mt-1" id="lblLanBaseUrl">http://192.168.1.20:3000</p>
+          <p class="text-[10px] text-[#A6A6A6] mt-0.5">Conexión directa por tu Wi-Fi local sin consumir internet.</p>
+        </button>
+
+        <button id="btnModeTunnel" onclick="window.setMobileQrMode('tunnel')" class="p-3.5 rounded-2xl border-2 border-[#2E2E2E] bg-[#191919] text-left transition-all">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-white text-xs flex items-center gap-1.5"><span>⚡</span> Opción 2: Túnel HTTPS Universal</span>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#06C167]/20 text-[#06C167] border border-[#06C167]/40 uppercase">Anti-Bloqueo + GPS</span>
+          </div>
+          <p class="font-mono text-[#06C167] text-xs font-bold mt-1 truncate" id="lblTunnelBaseUrl">https://1de3b77b254e8b.lhr.life</p>
+          <p class="text-[10px] text-[#A6A6A6] mt-0.5">Úsalo si tu router Wi-Fi aísla dispositivos (AP Isolation) o si usas Datos 4G.</p>
+        </button>
+      </div>
+
+      <!-- Cuadrícula de las 4 Apps con QR y Descarga de APK -->
+      <div id="mobileAppsQrGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1"></div>
+
+      <!-- Sección de Auto-Actualización y Publicación en GitHub Releases -->
+      <div class="p-4 rounded-2xl bg-[#181C24] border border-[#06C167]/30 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="text-xs font-black text-white flex items-center gap-1.5">
+              <span>🔄</span>
+              <span>Motor de Auto-Actualización & GitHub Releases</span>
+              <span id="lblCurrentAppVersion" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-[#06C167] text-black">v1.2.0</span>
+            </div>
+            <p class="text-[11px] text-[#A6A6A6] mt-0.5">
+              Repositorio conectado: <a href="https://github.com/darthriuk/PedidosNica/releases" target="_blank" class="text-[#06C167] font-mono underline">github.com/darthriuk/PedidosNica</a>
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="window.checkGitHubReleaseUpdate(true)" class="px-3 py-1.5 rounded-xl bg-[#242C3A] hover:bg-[#2E384A] text-white font-bold text-[11px] border border-[#3A465E] transition-colors flex items-center gap-1">
+              <span>🔍</span> Buscar Actualización
+            </button>
+            <a href="https://github.com/darthriuk/PedidosNica/releases/latest" target="_blank" class="px-3 py-1.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-[11px] transition-colors">
+              Ver Releases ↗
+            </a>
+          </div>
+        </div>
+        <div id="githubReleaseStatusBox" class="text-[11px] text-[#A6A6A6] font-mono bg-black/50 p-2.5 rounded-xl border border-[#262626]">
+          Verificando estado de compilación y última versión en GitHub...
+        </div>
+
+        <!-- Publicador de Nueva Versión en 1 Clic -->
+        <div class="pt-2 border-t border-[#262E3D] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input type="text" id="inpNewReleaseVersion" placeholder="Nueva versión (ej: 1.0.1)" class="bg-black border border-[#2E384A] focus:border-[#06C167] rounded-xl px-3 py-1.5 text-xs text-white font-mono outline-none sm:w-44" />
+          <input type="text" id="inpNewReleaseNotes" placeholder="Notas del cambio (ej: Mejoras en catálogo y despacho)" class="bg-black border border-[#2E384A] focus:border-[#06C167] rounded-xl px-3 py-1.5 text-xs text-white outline-none flex-1" />
+          <button id="btnPublishGitHubUpdate" onclick="window.publishNewGitHubUpdate()" class="px-3.5 py-1.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs transition-all shrink-0">
+            🚀 Subir y Compilar Release
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANNER SUPERIOR DE AUTO-ACTUALIZACIÓN EN TIEMPO REAL -->
+  <div id="pnAutoUpdateBanner" class="hidden fixed top-3 inset-x-4 max-w-xl mx-auto z-50 p-3.5 rounded-2xl bg-[#12161F]/95 border-2 border-[#06C167] shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 text-xs">
+    <div class="flex items-center gap-2.5">
+      <span class="p-2 rounded-xl bg-[#06C167]/20 text-[#06C167] text-base">🚀</span>
+      <div>
+        <p class="font-black text-white" id="pnUpdateBannerTitle">¡Nueva versión disponible!</p>
+        <p class="text-[11px] text-[#A6A6A6] line-clamp-1" id="pnUpdateBannerDesc">Se ha detectado una nueva actualización en GitHub Releases.</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <a id="pnUpdateBannerApkBtn" href="https://github.com/darthriuk/PedidosNica/releases/latest" target="_blank" class="px-3 py-1.5 rounded-xl bg-[#06C167] text-black font-black text-[11px]">
+        Actualizar APK
+      </a>
+      <button onclick="window.location.reload(true)" class="px-2.5 py-1.5 rounded-xl bg-[#242C3A] text-white font-bold text-[11px]">
+        Recargar
+      </button>
+      <button onclick="document.getElementById('pnAutoUpdateBanner').classList.add('hidden')" class="text-[#A6A6A6] hover:text-white p-1">✕</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const GITHUB_REPO = 'darthriuk/PedidosNica';
+      const INSTALLED_VERSION = '1.2.0';
+      const NET_INFO = {
+        lanBaseUrl: 'http://192.168.1.20:3000',
+        tunnelBaseUrl: 'https://1de3b77b254e8b.lhr.life'
+      };
+      let currentQrMode = 'lan';
+
+      const APPS = [
+        { id: 'client', title: 'App Clientes', subtitle: 'Catálogo, Carrito y Tracking', path: '/client', icon: '🍔', apkName: 'PedidosNica-Cliente.apk' },
+        { id: 'driver', title: 'App Repartidor', subtitle: 'Radar GPS y Bolsa de Pedidos', path: '/driver', icon: '🛵', apkName: 'PedidosNica-Repartidor.apk' },
+        { id: 'restaurant', title: 'Suite Restaurante', subtitle: 'Comandas KDS y Menú', path: '/restaurant', icon: '🏪', apkName: 'PedidosNica-Restaurante.apk' },
+        { id: 'hub', title: 'Central Hub', subtitle: 'App Manager & Usuarios IAM', path: '/', icon: '🛡️', apkName: null }
+      ];
+
+      function getCurrentPortalApkUrl() {
+        const p = window.location.pathname;
+        if (p.startsWith('/driver')) return 'https://github.com/' + GITHUB_REPO + '/releases/latest/download/PedidosNica-Repartidor.apk';
+        if (p.startsWith('/restaurant')) return 'https://github.com/' + GITHUB_REPO + '/releases/latest/download/PedidosNica-Restaurante.apk';
+        return 'https://github.com/' + GITHUB_REPO + '/releases/latest/download/PedidosNica-Cliente.apk';
+      }
+
+      function renderMobileQrCards() {
+        const grid = document.getElementById('mobileAppsQrGrid');
+        if (!grid) return;
+        const base = currentQrMode === 'lan' ? NET_INFO.lanBaseUrl : NET_INFO.tunnelBaseUrl;
+
+        const btnLan = document.getElementById('btnModeLan');
+        const btnTunnel = document.getElementById('btnModeTunnel');
+        if (btnLan && btnTunnel) {
+          if (currentQrMode === 'lan') {
+            btnLan.className = 'p-3.5 rounded-2xl border-2 border-[#06C167] bg-[#06C167]/10 text-left transition-all';
+            btnTunnel.className = 'p-3.5 rounded-2xl border-2 border-[#2E2E2E] bg-[#191919] text-left transition-all';
+          } else {
+            btnTunnel.className = 'p-3.5 rounded-2xl border-2 border-[#06C167] bg-[#06C167]/10 text-left transition-all';
+            btnLan.className = 'p-3.5 rounded-2xl border-2 border-[#2E2E2E] bg-[#191919] text-left transition-all';
+          }
+        }
+
+        grid.innerHTML = APPS.map(function(app) {
+          const fullUrl = base + app.path;
+          const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=' + encodeURIComponent(fullUrl);
+          const apkDownloadUrl = app.apkName ? ('https://github.com/' + GITHUB_REPO + '/releases/latest/download/' + app.apkName) : null;
+          return '<div class="p-3.5 rounded-2xl bg-[#191919] border border-[#2E2E2E] flex flex-col items-center text-center justify-between gap-2.5">' +
+            '<div class="w-full">' +
+              '<div class="text-sm font-black text-white flex items-center justify-center gap-1.5"><span>' + app.icon + '</span> <span>' + app.title + '</span></div>' +
+              '<p class="text-[10px] text-[#A6A6A6] mt-0.5">' + app.subtitle + '</p>' +
+            '</div>' +
+            '<div class="bg-white p-2 rounded-xl shadow-md">' +
+              '<img src="' + qrSrc + '" alt="QR ' + app.title + '" class="w-32 h-32 object-contain" loading="lazy" />' +
+            '</div>' +
+            '<div class="w-full space-y-1.5">' +
+              '<input type="text" readonly value="' + fullUrl + '" onclick="this.select()" class="w-full bg-black border border-[#2E2E2E] rounded-lg px-2 py-1 text-[10px] font-mono text-[#06C167] text-center outline-none" />' +
+              '<div class="flex gap-1.5">' +
+                '<button onclick="navigator.clipboard.writeText(\'' + fullUrl + '\'); this.textContent=\'¡Copiado!\'; setTimeout(()=>this.textContent=\'Copiar Link\', 1500)" class="flex-1 py-1.5 rounded-lg bg-[#242424] hover:bg-[#2E2E2E] text-white font-bold text-[10px] transition-colors">Copiar Link</button>' +
+                '<a href="' + fullUrl + '" target="_blank" class="py-1.5 px-2.5 rounded-lg bg-[#06C167] text-black font-black text-[10px]">Abrir ↗</a>' +
+              '</div>' +
+              (apkDownloadUrl ? (
+                '<a href="' + apkDownloadUrl + '" target="_blank" class="block w-full py-1.5 rounded-lg bg-[#06C167]/15 hover:bg-[#06C167]/25 border border-[#06C167]/40 text-[#06C167] font-black text-[10px] transition-colors">📲 Descargar ' + app.apkName + '</a>'
+              ) : '') +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      window.checkGitHubReleaseUpdate = async function(manual) {
+        const statusBox = document.getElementById('githubReleaseStatusBox');
+        if (manual && statusBox) {
+          statusBox.textContent = 'Consultando GitHub Releases (' + GITHUB_REPO + ')...';
+        }
+        try {
+          // 1. Consultar endpoint local y GitHub Releases
+          const res = await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/releases/latest', {
+            headers: { 'Accept': 'application/vnd.github+json' }
+          });
+          if (res.ok) {
+            const release = await res.json();
+            const latestTag = (release.tag_name || '').replace(/^v/i, '');
+            const assetsCount = Array.isArray(release.assets) ? release.assets.length : 0;
+            if (statusBox) {
+              statusBox.innerHTML = '✅ Último Release en GitHub: <strong class="text-[#06C167]">v' + latestTag + '</strong> (' + assetsCount + ' paquetes compilados listos) • Publicado: ' + new Date(release.published_at).toLocaleString();
+            }
+            const seenTag = localStorage.getItem('pn_seen_release_version') || INSTALLED_VERSION;
+            if (latestTag && latestTag !== INSTALLED_VERSION && latestTag !== seenTag) {
+              const banner = document.getElementById('pnAutoUpdateBanner');
+              const titleEl = document.getElementById('pnUpdateBannerTitle');
+              const descEl = document.getElementById('pnUpdateBannerDesc');
+              const apkBtn = document.getElementById('pnUpdateBannerApkBtn');
+              if (banner && titleEl && descEl && apkBtn) {
+                titleEl.textContent = '🚀 Nueva Actualización Disponible (v' + latestTag + ')';
+                descEl.textContent = release.name || 'Nueva versión compilada en GitHub Releases lista para instalar.';
+                apkBtn.href = getCurrentPortalApkUrl();
+                banner.classList.remove('hidden');
+              }
+            } else if (manual) {
+              alert('✅ Estás en la versión más reciente (v' + (latestTag || INSTALLED_VERSION) + ').\n\nPuedes descargar los 3 archivos .APK directamente desde las tarjetas de abajo.');
+            }
+          } else {
+            if (statusBox) {
+              statusBox.innerHTML = '⚙️ GitHub Actions compilando versión inicial <strong class="text-[#06C167]">v' + INSTALLED_VERSION + '</strong> en <a href="https://github.com/' + GITHUB_REPO + '/actions" target="_blank" class="underline text-white">github.com/' + GITHUB_REPO + '/actions</a>...';
+            }
+          }
+        } catch (_) {
+          if (statusBox) {
+            statusBox.textContent = 'Versión activa local: v' + INSTALLED_VERSION + ' • Sincronizado con ' + GITHUB_REPO;
+          }
+        }
+      };
+
+      window.publishNewGitHubUpdate = async function() {
+        const verInput = document.getElementById('inpNewReleaseVersion');
+        const notesInput = document.getElementById('inpNewReleaseNotes');
+        const btn = document.getElementById('btnPublishGitHubUpdate');
+        const statusBox = document.getElementById('githubReleaseStatusBox');
+        const newVersion = verInput && verInput.value.trim() ? verInput.value.trim() : '';
+        const changelog = notesInput && notesInput.value.trim() ? notesInput.value.trim() : 'Actualización de plataforma PedidosNica';
+
+        if (!newVersion) {
+          alert('Ingresa el número de la nueva versión (por ejemplo: 1.0.1)');
+          return;
+        }
+
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Subiendo a GitHub...';
+        }
+        if (statusBox) {
+          statusBox.innerHTML = '⏳ Subiendo cambios al repositorio <strong class="text-[#06C167]">' + GITHUB_REPO + '</strong> y disparando compilación de APKs (v' + newVersion + ')...';
+        }
+
+        try {
+          const res = await fetch('/api/github/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newVersion: newVersion, changelog: changelog })
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            throw new Error(data.error || 'Error al publicar en GitHub');
+          }
+          if (statusBox) {
+            statusBox.innerHTML = '✅ Versión <strong class="text-[#06C167]">v' + data.versionInfo.version + '</strong> subida (' + data.filesUploaded + ' archivos). GitHub Actions está compilando los 3 APKs ahora mismo en <a href="' + data.actionsUrl + '" target="_blank" class="underline text-white">Ver Progreso ↗</a>';
+          }
+          const lblVer = document.getElementById('lblCurrentAppVersion');
+          if (lblVer) lblVer.textContent = 'v' + data.versionInfo.version;
+          if (verInput) verInput.value = '';
+          if (notesInput) notesInput.value = '';
+        } catch (err) {
+          if (statusBox) {
+            statusBox.innerHTML = '❌ Error: ' + err.message;
+          }
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🚀 Subir y Compilar Release';
+          }
+        }
+      };
+
+      window.setMobileQrMode = function(mode) {
+        currentQrMode = mode;
+        renderMobileQrCards();
+      };
+
+      window.openMobileAccessModal = function(defaultMode) {
+        if (defaultMode) currentQrMode = defaultMode;
+        const modal = document.getElementById('pnMobileAccessModal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          renderMobileQrCards();
+          window.checkGitHubReleaseUpdate(false);
+        }
+      };
+
+      window.closeMobileAccessModal = function() {
+        const modal = document.getElementById('pnMobileAccessModal');
+        if (modal) modal.classList.add('hidden');
+      };
+
+      // Verificar automáticamente al abrir cualquier aplicación y cada 60 segundos
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() { window.checkGitHubReleaseUpdate(false); }, 1500);
+        setInterval(function() { window.checkGitHubReleaseUpdate(false); }, 60000);
+      });
+    })();
+  </script>
+</body></html>
