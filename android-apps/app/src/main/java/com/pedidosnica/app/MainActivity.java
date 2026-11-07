@@ -21,7 +21,6 @@ import android.view.Window;
 import android.webkit.CookieManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -43,14 +42,11 @@ public class MainActivity extends Activity {
 
     private static final String PREFS_NAME = "PedidosNicaPrefs";
     private static final String KEY_CUSTOM_SERVER = "custom_server_url";
-    private static final String KEY_LAST_LAN = "last_lan_url";
-    private static final String KEY_LAST_TUNNEL = "last_tunnel_url";
 
     private WebView webView;
     private TextView statusBadge;
     private SharedPreferences prefs;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private String activeBaseUrl = BuildConfig.DEFAULT_TUNNEL_URL;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +63,7 @@ public class MainActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.parseColor("#000000"));
 
-        // Barra superior nativa con versión, estado de conexión y verificador de actualizaciones
+        // Barra superior nativa con versión, estado y verificador de actualizaciones
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
@@ -85,7 +81,7 @@ public class MainActivity extends Activity {
         topBar.addView(titleView, titleParams);
 
         statusBadge = new TextView(this);
-        statusBadge.setText("Conectando...");
+        statusBadge.setText("App Local Activa");
         statusBadge.setTextColor(Color.parseColor("#A6A6A6"));
         statusBadge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         statusBadge.setPadding(dp(6), dp(2), dp(8), dp(2));
@@ -120,7 +116,7 @@ public class MainActivity extends Activity {
         setContentView(root);
 
         requestLocationPermissionsIfNeeded();
-        resolveBestServerAndLoad();
+        loadBundledOrCustomApp();
         checkForGitHubUpdate(false);
     }
 
@@ -143,12 +139,17 @@ public class MainActivity extends Activity {
         );
     }
 
+    @SuppressWarnings("deprecation")
     private void setupWebView() {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setGeolocationEnabled(true);
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
+        settings.setAllowFileAccessFromFileURLs(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
@@ -176,13 +177,6 @@ public class MainActivity extends Activity {
                 }
                 return false;
             }
-
-            @Override
-            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) {
-                    statusBadge.setText("Sin conexión");
-                }
-            }
         });
     }
 
@@ -197,59 +191,17 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void resolveBestServerAndLoad() {
+    private void loadBundledOrCustomApp() {
         String custom = prefs.getString(KEY_CUSTOM_SERVER, "");
         if (custom != null && !custom.trim().isEmpty()) {
-            activeBaseUrl = custom.trim();
-            loadPortalUrl(activeBaseUrl, "Servidor Personalizado");
+            String clean = custom.trim().replaceAll("/+$", "");
+            statusBadge.setText("Servidor: " + clean);
+            webView.loadUrl(clean + BuildConfig.PORTAL_PATH);
             return;
         }
-
-        new Thread(() -> {
-            String lanUrl = prefs.getString(KEY_LAST_LAN, BuildConfig.DEFAULT_LAN_URL);
-            String tunnelUrl = prefs.getString(KEY_LAST_TUNNEL, BuildConfig.DEFAULT_TUNNEL_URL);
-
-            // 1. Consultar version.json en GitHub para obtener las URLs más recientes de LAN y Túnel
-            try {
-                String rawUrl = "https://raw.githubusercontent.com/" + BuildConfig.GITHUB_REPO + "/main/version.json?t=" + System.currentTimeMillis();
-                String jsonStr = httpGet(rawUrl, 3000);
-                if (jsonStr != null) {
-                    JSONObject obj = new JSONObject(jsonStr);
-                    if (obj.has("lanUrl") && !obj.getString("lanUrl").isEmpty()) {
-                        lanUrl = obj.getString("lanUrl");
-                        prefs.edit().putString(KEY_LAST_LAN, lanUrl).apply();
-                    }
-                    if (obj.has("tunnelUrl") && !obj.getString("tunnelUrl").isEmpty()) {
-                        tunnelUrl = obj.getString("tunnelUrl");
-                        prefs.edit().putString(KEY_LAST_TUNNEL, tunnelUrl).apply();
-                    }
-                }
-            } catch (Exception ignored) {}
-
-            // 2. Probar primero si la IP local (Wi-Fi LAN) responde rápido
-            if (isServerReachable(lanUrl + "/api/network-info", 1600)) {
-                final String chosen = lanUrl;
-                mainHandler.post(() -> {
-                    activeBaseUrl = chosen;
-                    loadPortalUrl(chosen, "Wi-Fi Local");
-                });
-                return;
-            }
-
-            // 3. Si no, usar el Túnel HTTPS Universal
-            final String chosenTunnel = tunnelUrl;
-            mainHandler.post(() -> {
-                activeBaseUrl = chosenTunnel;
-                loadPortalUrl(chosenTunnel, "Túnel HTTPS");
-            });
-        }).start();
-    }
-
-    private void loadPortalUrl(String baseUrl, String modeLabel) {
-        String cleanBase = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        String targetUrl = cleanBase + BuildConfig.PORTAL_PATH;
-        statusBadge.setText(modeLabel);
-        webView.loadUrl(targetUrl);
+        // Cargar instantáneamente el Build Local empaquetado dentro del APK (0 errores de túnel)
+        statusBadge.setText("Build Local Activo");
+        webView.loadUrl(BuildConfig.ASSET_HTML);
     }
 
     private void checkForGitHubUpdate(boolean manualTrigger) {
@@ -295,14 +247,13 @@ public class MainActivity extends Activity {
                                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(finalDownloadUrl));
                                     startActivity(intent);
                                 })
-                                .setNeutralButton("Recargar Vista Web", (d, w) -> webView.reload())
                                 .setNegativeButton("Más tarde", null)
                                 .show();
                     } else if (manualTrigger) {
                         new AlertDialog.Builder(MainActivity.this)
                                 .setTitle("✅ Aplicación Actualizada")
                                 .setMessage("Tienes instalada la versión más reciente (v" + BuildConfig.VERSION_NAME + ") de " + BuildConfig.APP_ROLE_TITLE + ".")
-                                .setPositiveButton("Recargar Ahora", (d, w) -> webView.reload())
+                                .setPositiveButton("Recargar Vista", (d, w) -> loadBundledOrCustomApp())
                                 .setNeutralButton("Re-descargar APK", (d, w) -> {
                                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(finalDownloadUrl));
                                     startActivity(intent);
@@ -320,8 +271,6 @@ public class MainActivity extends Activity {
     }
 
     private void showServerConfigDialog() {
-        final String lanUrl = prefs.getString(KEY_LAST_LAN, BuildConfig.DEFAULT_LAN_URL);
-        final String tunnelUrl = prefs.getString(KEY_LAST_TUNNEL, BuildConfig.DEFAULT_TUNNEL_URL);
         final String currentCustom = prefs.getString(KEY_CUSTOM_SERVER, "");
 
         LinearLayout container = new LinearLayout(this);
@@ -330,43 +279,26 @@ public class MainActivity extends Activity {
         container.setPadding(p, p, p, p);
 
         final EditText input = new EditText(this);
-        input.setHint("Ej: http://192.168.1.20:3000 o https://tu-tunel.lhr.life");
-        input.setText(currentCustom.isEmpty() ? activeBaseUrl : currentCustom);
+        input.setHint("Opcional: http://192.168.1.20:3000 (vacío = Build Local)");
+        input.setText(currentCustom);
         input.setSingleLine(true);
         container.addView(input);
 
         new AlertDialog.Builder(this)
-                .setTitle("Configurar Conexión del Servidor")
-                .setMessage("Modo activo: " + activeBaseUrl + "\n\nElige cómo conectar tu teléfono:")
+                .setTitle("Modo de Ejecución de la App")
+                .setMessage("La app incluye el Build Local completo empaquetado adentro y sincroniza con tu red local automáticamente cuando está disponible.")
                 .setView(container)
-                .setPositiveButton("Guardar URL", (d, w) -> {
+                .setPositiveButton("Usar Build Local (Recomendado)", (d, w) -> {
+                    prefs.edit().remove(KEY_CUSTOM_SERVER).apply();
+                    loadBundledOrCustomApp();
+                })
+                .setNeutralButton("Conectar a IP ingresada", (d, w) -> {
                     String val = input.getText().toString().trim();
                     prefs.edit().putString(KEY_CUSTOM_SERVER, val).apply();
-                    resolveBestServerAndLoad();
-                })
-                .setNeutralButton("Auto (Wi-Fi / Túnel)", (d, w) -> {
-                    prefs.edit().remove(KEY_CUSTOM_SERVER).apply();
-                    resolveBestServerAndLoad();
+                    loadBundledOrCustomApp();
                 })
                 .setNegativeButton("Cancelar", null)
                 .show();
-    }
-
-    private boolean isServerReachable(String urlStr, int timeoutMs) {
-        HttpURLConnection conn = null;
-        try {
-            URL url = new URL(urlStr);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(timeoutMs);
-            conn.setReadTimeout(timeoutMs);
-            conn.setRequestMethod("GET");
-            int code = conn.getResponseCode();
-            return code >= 200 && code < 400;
-        } catch (Exception e) {
-            return false;
-        } finally {
-            if (conn != null) conn.disconnect();
-        }
     }
 
     private String httpGet(String urlStr, int timeoutMs) {

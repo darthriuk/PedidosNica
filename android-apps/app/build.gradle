@@ -6,10 +6,9 @@ plugins {
 
 def versionFile = file("../../version.json")
 def versionJson = versionFile.exists() ? new JsonSlurper().parseText(versionFile.text) : [:]
-int appVersionCode = (versionJson.versionCode ?: 1) as Integer
-String appVersionName = (versionJson.version ?: "1.0.0").toString()
+int appVersionCode = (versionJson.versionCode ?: 2) as Integer
+String appVersionName = (versionJson.version ?: "1.1.0").toString()
 String appLanUrl = (versionJson.lanUrl ?: "http://192.168.1.20:3000").toString()
-String appTunnelUrl = (versionJson.tunnelUrl ?: "https://1de3b77b254e8b.lhr.life").toString()
 
 android {
     namespace 'com.pedidosnica.app'
@@ -23,7 +22,6 @@ android {
 
         buildConfigField "String", "GITHUB_REPO", "\"darthriuk/PedidosNica\""
         buildConfigField "String", "DEFAULT_LAN_URL", "\"${appLanUrl}\""
-        buildConfigField "String", "DEFAULT_TUNNEL_URL", "\"${appTunnelUrl}\""
     }
 
     signingConfigs {
@@ -53,6 +51,7 @@ android {
             applicationId "com.pedidosnica.client"
             resValue "string", "app_name", "PedidosNica Cliente"
             buildConfigField "String", "PORTAL_PATH", "\"/client\""
+            buildConfigField "String", "ASSET_HTML", "\"file:///android_asset/client.html\""
             buildConfigField "String", "APK_ASSET_NAME", "\"PedidosNica-Cliente.apk\""
             buildConfigField "String", "APP_ROLE_TITLE", "\"PedidosNica Cliente\""
         }
@@ -61,6 +60,7 @@ android {
             applicationId "com.pedidosnica.driver"
             resValue "string", "app_name", "PedidosNica Repartidor"
             buildConfigField "String", "PORTAL_PATH", "\"/driver\""
+            buildConfigField "String", "ASSET_HTML", "\"file:///android_asset/driver.html\""
             buildConfigField "String", "APK_ASSET_NAME", "\"PedidosNica-Repartidor.apk\""
             buildConfigField "String", "APP_ROLE_TITLE", "\"PedidosNica Repartidor\""
         }
@@ -69,6 +69,7 @@ android {
             applicationId "com.pedidosnica.restaurant"
             resValue "string", "app_name", "PedidosNica Restaurante"
             buildConfigField "String", "PORTAL_PATH", "\"/restaurant\""
+            buildConfigField "String", "ASSET_HTML", "\"file:///android_asset/restaurant.html\""
             buildConfigField "String", "APK_ASSET_NAME", "\"PedidosNica-Restaurante.apk\""
             buildConfigField "String", "APP_ROLE_TITLE", "\"PedidosNica Restaurante\""
         }

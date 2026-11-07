@@ -444,6 +444,15 @@ function getFooter() {
         <div id="githubReleaseStatusBox" class="text-[11px] text-[#A6A6A6] font-mono bg-black/50 p-2.5 rounded-xl border border-[#262626]">
           Verificando estado de compilación y última versión en GitHub...
         </div>
+
+        <!-- Publicador de Nueva Versión en 1 Clic -->
+        <div class="pt-2 border-t border-[#262E3D] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input type="text" id="inpNewReleaseVersion" placeholder="Nueva versión (ej: 1.0.1)" class="bg-black border border-[#2E384A] focus:border-[#06C167] rounded-xl px-3 py-1.5 text-xs text-white font-mono outline-none sm:w-44" />
+          <input type="text" id="inpNewReleaseNotes" placeholder="Notas del cambio (ej: Mejoras en catálogo y despacho)" class="bg-black border border-[#2E384A] focus:border-[#06C167] rounded-xl px-3 py-1.5 text-xs text-white outline-none flex-1" />
+          <button id="btnPublishGitHubUpdate" onclick="window.publishNewGitHubUpdate()" class="px-3.5 py-1.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs transition-all shrink-0">
+            🚀 Subir y Compilar Release
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -575,6 +584,56 @@ function getFooter() {
         } catch (_) {
           if (statusBox) {
             statusBox.textContent = 'Versión activa local: v' + INSTALLED_VERSION + ' • Sincronizado con ' + GITHUB_REPO;
+          }
+        }
+      };
+
+      window.publishNewGitHubUpdate = async function() {
+        const verInput = document.getElementById('inpNewReleaseVersion');
+        const notesInput = document.getElementById('inpNewReleaseNotes');
+        const btn = document.getElementById('btnPublishGitHubUpdate');
+        const statusBox = document.getElementById('githubReleaseStatusBox');
+        const newVersion = verInput && verInput.value.trim() ? verInput.value.trim() : '';
+        const changelog = notesInput && notesInput.value.trim() ? notesInput.value.trim() : 'Actualización de plataforma PedidosNica';
+
+        if (!newVersion) {
+          alert('Ingresa el número de la nueva versión (por ejemplo: 1.0.1)');
+          return;
+        }
+
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Subiendo a GitHub...';
+        }
+        if (statusBox) {
+          statusBox.innerHTML = '⏳ Subiendo cambios al repositorio <strong class="text-[#06C167]">' + GITHUB_REPO + '</strong> y disparando compilación de APKs (v' + newVersion + ')...';
+        }
+
+        try {
+          const res = await fetch('/api/github/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newVersion: newVersion, changelog: changelog })
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            throw new Error(data.error || 'Error al publicar en GitHub');
+          }
+          if (statusBox) {
+            statusBox.innerHTML = '✅ Versión <strong class="text-[#06C167]">v' + data.versionInfo.version + '</strong> subida (' + data.filesUploaded + ' archivos). GitHub Actions está compilando los 3 APKs ahora mismo en <a href="' + data.actionsUrl + '" target="_blank" class="underline text-white">Ver Progreso ↗</a>';
+          }
+          const lblVer = document.getElementById('lblCurrentAppVersion');
+          if (lblVer) lblVer.textContent = 'v' + data.versionInfo.version;
+          if (verInput) verInput.value = '';
+          if (notesInput) notesInput.value = '';
+        } catch (err) {
+          if (statusBox) {
+            statusBox.innerHTML = '❌ Error: ' + err.message;
+          }
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🚀 Subir y Compilar Release';
           }
         }
       };
@@ -1345,6 +1404,15 @@ function broadcastEvent(typeOrObj, payload) {
 }
 
 const server = http.createServer(async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   const url = req.url.split('?')[0];
 
   // Canal de eventos en vivo SSE para sincronización instantánea

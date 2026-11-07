@@ -1,0 +1,2852 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <script src="embeddedBackend.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PedidosNica Driver | App de Repartidor | PedidosNica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            uber: {
+              green: '#06C167',
+              greenHover: '#05A357',
+              greenLight: 'rgba(6, 193, 103, 0.12)',
+              black: '#000000',
+              dark: '#121212',
+              card: '#1C1C1C',
+              surface: '#242424',
+              border: '#2E2E2E',
+              subtext: '#A6A6A6',
+              light: '#F6F6F6'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta name="theme-color" content="#06C167">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PedidosNica">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        Promise.resolve().catch(function() {});
+      });
+    }
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const btn = document.getElementById('floatingInstallBtn');
+      if (btn) btn.classList.remove('hidden');
+    });
+    window.triggerPWAInstall = function() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(() => {
+          deferredInstallPrompt = null;
+          const btn = document.getElementById('floatingInstallBtn');
+          if (btn) btn.classList.add('hidden');
+        });
+      } else {
+        alert("Para instalar en tu teléfono:
+Toca el menú de 3 puntos (⋮) en la esquina superior de Chrome y selecciona 'Instalar aplicación' o 'Agregar a la pantalla principal'.");
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #000000;
+      color: #FFFFFF;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Estilos de scrollbar suave */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #121212;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2E2E2E;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06C167;
+    }
+    /* Estilos de Impresión para Ticket Térmico de Cocina (80mm) */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printableThermalTicket, #printableThermalTicket * {
+        visibility: visible !important;
+      }
+      #printableThermalTicket {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 78mm !important;
+        max-width: 80mm !important;
+        margin: 0 !important;
+        padding: 3mm !important;
+        background: white !important;
+        color: black !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      #printableThermalTicket .no-print {
+        display: none !important;
+      }
+    }
+
+    /* ===================================================================== */
+    /* SISTEMA GLOBAL DE ICONOGRAFÍA MONOCROMÁTICA UNIFORME (#06C167)        */
+    /* ===================================================================== */
+    .pn-uni-icon {
+      display: inline-block;
+      width: 1.1em;
+      height: 1.1em;
+      vertical-align: -0.18em;
+      color: #06C167 !important;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    /* Contraste uniforme cuando el icono está dentro de un botón verde activo */
+    .bg-[#06C167] .pn-uni-icon,
+    button.bg-[#06C167] .pn-uni-icon,
+    a.bg-[#06C167] .pn-uni-icon,
+    .text-black > .pn-uni-icon,
+    .text-black .pn-uni-icon {
+      color: #000000 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-black text-white antialiased selection:bg-[#06C167] selection:text-black">
+
+  <!-- MAPLIBRE GL CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+
+  <style>
+    /* Estilos del mockup de teléfono para visualización 1:1 en escritorio */
+    .phone-frame {
+      width: 412px;
+      height: 840px;
+      max-height: calc(100vh - 90px);
+      border-radius: 44px;
+      border: 8px solid #222;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 0 2px #333;
+      overflow: hidden;
+      position: relative;
+      background: #000;
+    }
+    .phone-notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140px;
+      height: 24px;
+      background: #181818;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .phone-notch .camera {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #0d0d0d;
+      border: 1px solid #222;
+    }
+    .phone-notch .speaker {
+      width: 40px;
+      height: 4px;
+      border-radius: 2px;
+      background: #262626;
+    }
+    /* Estilos de velocímetro */
+    .speedo-glow {
+      box-shadow: 0 0 35px -5px rgba(6, 193, 103, 0.35);
+    }
+  </style>
+
+  <div id="driverAppRoot" class="min-h-screen flex flex-col bg-[#08090C] text-white antialiased selection:bg-[#06C167] selection:text-black">
+
+    <!-- BLOQUEO ESTRICTO: RESTAURANTE INTENTANDO ENTRAR A DRIVER -->
+    <div id="restaurantBlockedDriverNotice" class="hidden max-w-lg mx-auto my-16 p-8 bg-[#151214] border-2 border-rose-500/50 rounded-3xl text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 rounded-3xl bg-rose-500/20 text-rose-400 text-3xl flex items-center justify-center mx-auto border border-rose-500/40">
+        🚫
+      </div>
+      <div>
+        <h2 class="text-xl font-black text-white">Acceso Bloqueado para Personal de Restaurante</h2>
+        <p class="text-xs text-rose-200/90 mt-1.5 leading-relaxed">
+          Tu cuenta está identificada como <strong class="text-white underline">Administrador / Personal de Restaurante</strong>. Por separación estricta de funciones operativas, el personal del restaurante tiene terminantemente prohibido acceder a la aplicación de repartidores.
+        </p>
+      </div>
+      <div class="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
+        <a href="/restaurant" class="px-5 py-2.5 rounded-xl bg-[#06C167] text-black font-extrabold text-xs shadow-lg shadow-[#06C167]/20 flex items-center justify-center gap-1.5">
+          <span>🏪</span> Volver a mi Restaurante
+        </a>
+        <button onclick="logoutRestaurantSessionFromDriver()" class="px-4 py-2.5 rounded-xl bg-[#222] hover:bg-[#333] text-[#A6A6A6] hover:text-white font-bold text-xs">
+          Cerrar Sesión de Restaurante
+        </button>
+      </div>
+    </div>
+
+    <!-- PORTAL DE ACCESO / LOGIN INDEPENDIENTE DE REPARTIDORES -->
+    <div id="driverLoginGate" class="hidden max-w-md mx-auto my-12 px-4 space-y-4">
+      <div class="text-center mb-4">
+        <div class="w-16 h-16 rounded-3xl bg-[#06C167]/15 border border-[#06C167]/40 flex items-center justify-center text-3xl mx-auto shadow-2xl mb-2">
+          🛵
+        </div>
+        <h1 class="text-2xl font-black text-white tracking-tight">
+          PedidosNica Driver
+        </h1>
+        <p class="text-xs text-[#8A94A6] mt-0.5">
+          Ingreso independiente para conductores. Cada cuenta opera de forma personal e intransferible.
+        </p>
+      </div>
+
+      <div class="bg-[#12141C] border-2 border-[#262D3B] focus-within:border-[#06C167] rounded-3xl p-6 sm:p-7 shadow-2xl space-y-4">
+        <!-- Pestañas Superiores: Login vs Registro -->
+        <div class="flex items-center gap-1 p-1 bg-[#181D26] rounded-2xl border border-[#2B3444]">
+          <button type="button" id="tabDriverLoginBtn" onclick="switchDriverAuthTab('login')" class="flex-1 py-2 rounded-xl text-xs font-black transition-all bg-[#06C167] text-black shadow-md cursor-pointer">
+            Iniciar Sesión
+          </button>
+          <button type="button" id="tabDriverRegisterBtn" onclick="switchDriverAuthTab('register')" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-[#8A94A6] hover:text-white cursor-pointer">
+            Registrarme como Conductor
+          </button>
+        </div>
+
+        <!-- FORMULARIO DE INICIO DE SESIÓN -->
+        <div id="driverLoginFormBox" class="space-y-4">
+          <form onsubmit="event.preventDefault(); loginDriverWithForm();" class="space-y-3.5">
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8A94A6] mb-1">Correo Electrónico de Conductor</label>
+              <input type="email" id="driverLoginEmail" required placeholder="driver.martin@pedidosnica.com" class="w-full bg-[#181D26] border border-[#2B3444] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#06C167]" />
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8A94A6] mb-1">Contraseña</label>
+              <input type="password" id="driverLoginPassword" required value="Password123!" placeholder="••••••••" class="w-full bg-[#181D26] border border-[#2B3444] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#06C167]" />
+            </div>
+
+            <button type="submit" id="btnDriverLoginSubmit" class="w-full py-3.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs uppercase tracking-wider shadow-xl shadow-[#06C167]/25 transition-all cursor-pointer">
+              Ingresar y Conectarse
+            </button>
+          </form>
+
+          <!-- Accesos rápidos a conductores registrados -->
+          <div class="pt-3 border-t border-[#222938] space-y-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-[#8A94A6] block">Ingreso Rápido de Conductor:</span>
+            
+            <div class="space-y-1.5 text-left text-xs">
+              <button onclick="quickFillDriverLogin('driver.martin@pedidosnica.com', 'Password123!')" class="w-full p-2.5 rounded-xl bg-[#181D26] hover:bg-[#202737] border border-[#283244] flex items-center justify-between text-left transition-colors">
+                <div>
+                  <p class="font-bold text-white text-[11px]">Martín Rivas <span class="text-[10px] text-amber-400 font-mono">⭐ 4.95</span></p>
+                  <p class="text-[10px] text-[#8A94A6]">driver.martin@pedidosnica.com • Moto CB125</p>
+                </div>
+                <span class="text-xs text-[#06C167]">Conectar →</span>
+              </button>
+
+              <button onclick="quickFillDriverLogin('driver.carlos@pedidosnica.com', 'Password123!')" class="w-full p-2.5 rounded-xl bg-[#181D26] hover:bg-[#202737] border border-[#283244] flex items-center justify-between text-left transition-colors">
+                <div>
+                  <p class="font-bold text-white text-[11px]">Carlos Gómez <span class="text-[10px] text-amber-400 font-mono">⭐ 4.88</span></p>
+                  <p class="text-[10px] text-[#8A94A6]">driver.carlos@pedidosnica.com • Yamaha FZ</p>
+                </div>
+                <span class="text-xs text-[#06C167]">Conectar →</span>
+              </button>
+
+              <button onclick="quickFillDriverLogin('driver.matias@pedidosnica.com', 'Password123!')" class="w-full p-2.5 rounded-xl bg-[#181D26] hover:bg-[#202737] border border-[#283244] flex items-center justify-between text-left transition-colors">
+                <div>
+                  <p class="font-bold text-white text-[11px]">Matías Pérez <span class="text-[10px] text-amber-400 font-mono">⭐ 4.92</span></p>
+                  <p class="text-[10px] text-[#8A94A6]">driver.matias@pedidosnica.com • Bicicleta Pro</p>
+                </div>
+                <span class="text-xs text-[#06C167]">Conectar →</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORMULARIO DE REGISTRO NUEVO REPARTIDOR -->
+        <div id="driverRegisterFormBox" class="hidden space-y-3">
+          <form onsubmit="event.preventDefault(); registerDriverWithForm();" class="space-y-3">
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8A94A6] mb-1">Nombre Completo</label>
+              <input type="text" id="regDriverName" required placeholder="Ej. Roberto Morales" class="w-full bg-[#181D26] border border-[#2B3444] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#06C167]" />
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8A94A6] mb-1">Correo Electrónico</label>
+              <input type="email" id="regDriverEmail" required placeholder="driver.roberto@pedidosnica.com" class="w-full bg-[#181D26] border border-[#2B3444] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#06C167]" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8A94A6] mb-1">Teléfono WhatsApp</label>
+                <input type="text" id="regDriverPhone" required placeholder="+505 8888-0000" value="+505 8888-0000" class="w-full bg-[#181D26] border border-[#2B3444] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#06C167]" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8A94A6] mb-1">Tipo de Vehículo</label>
+                <select id="regDriverVehicle" class="w-full bg-[#181D26] border border-[#2B3444] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#06C167]">
+                  <option value="MOTORCYCLE">Motocicleta</option>
+                  <option value="BICYCLE">Bicicleta</option>
+                  <option value="CAR">Automóvil</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8A94A6] mb-1">Placa / Identificador</label>
+                <input type="text" id="regDriverPlate" required placeholder="M-88991" value="M-88991" class="w-full bg-[#181D26] border border-[#2B3444] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#06C167]" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8A94A6] mb-1">Contraseña</label>
+                <input type="password" id="regDriverPassword" required value="Password123!" placeholder="••••••••" class="w-full bg-[#181D26] border border-[#2B3444] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#06C167]" />
+              </div>
+            </div>
+
+            <button type="submit" id="btnDriverRegisterSubmit" class="w-full py-3.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs uppercase tracking-wider shadow-xl shadow-[#06C167]/25 transition-all cursor-pointer">
+              Crear Cuenta de Repartidor y Conectarme
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENEDOR OPERATIVO DEL DRIVER (OCULTO HASTA LOGIN) -->
+    <div id="driverAppRootContent" class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- TOPBAR DRIVER APP -->
+    <header class="bg-[#12141A] border-b border-[#222630] sticky top-0 z-40 px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3 shadow-xl">
+      
+      <!-- Identidad Repartidor -->
+      <div class="flex items-center gap-2.5 sm:gap-4 min-w-0">
+        <a href="/" class="flex items-center gap-1 shrink-0 group" title="Volver al Hub">
+          <span class="font-extrabold text-lg sm:text-xl tracking-tighter text-white">Pedidos</span>
+          <span class="font-black text-lg sm:text-xl tracking-tighter text-[#06C167]">Nica</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-[#1F242D] text-[#06C167] px-2 py-0.5 rounded-full border border-[#2E3542] ml-1">Driver</span>
+        </a>
+
+        <div class="h-5 w-px bg-[#262D3B] hidden sm:block"></div>
+
+        <!-- Perfil y Cambio de Conductor -->
+        <button onclick="openDriverProfileModal()" id="driverProfileBadgeBtn" class="flex items-center gap-2 min-w-0 px-2.5 py-1.5 rounded-2xl bg-[#1A1F29] hover:bg-[#252C3A] border border-[#2B3444] text-left transition-all group cursor-pointer shadow-md">
+          <div class="w-8 h-8 rounded-full bg-[#06C167]/15 border border-[#06C167]/40 flex items-center justify-center text-sm font-bold text-[#06C167] shrink-0">
+            🛵
+          </div>
+          <div class="truncate hidden sm:block">
+            <h3 class="text-xs font-bold text-white truncate flex items-center gap-1.5">
+              <span id="driverNameHeader">Martín Rivas</span>
+              <span class="text-[10px] font-mono text-amber-400 font-normal">⭐ 4.95</span>
+              <span class="text-[9px] text-[#06C167] font-semibold group-hover:underline">Perfil ▼</span>
+            </h3>
+            <p class="text-[10px] text-[#8A94A6] font-mono truncate">
+              <span id="driverVehicleHeader">Moto Honda 150</span> • <span id="driverPlateHeader">A482XYZ</span>
+            </p>
+          </div>
+        </button>
+      </div>
+
+      <!-- SELECTOR DE VISTA: SMARTPHONE VS COCKPIT ESCRITORIO -->
+      <div class="hidden md:flex items-center bg-[#181D26] p-1 rounded-full border border-[#28303F]">
+        <button id="viewModeCockpitBtn" onclick="switchViewMode('cockpit')" class="px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 bg-[#06C167] text-black shadow-md">
+          <span>🖥️</span>
+          <span>Cockpit Completo</span>
+        </button>
+        <button id="viewModePhoneBtn" onclick="switchViewMode('phone')" class="px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 text-[#8A94A6] hover:text-white">
+          <span>📱</span>
+          <span>Vista Smartphone</span>
+        </button>
+      </div>
+
+      <!-- Control de Estado Online / Offline -->
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Switch de Conexión -->
+        <button id="toggleOnlineBtn" onclick="toggleDriverOnline()" class="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-black transition-all flex items-center gap-2 border shadow-lg bg-[#06C167] text-black border-[#06C167] hover:bg-[#05A357]">
+          <span id="onlineDot" class="w-2.5 h-2.5 rounded-full bg-black animate-pulse"></span>
+          <span id="onlineText">CONECTADO</span>
+        </button>
+
+        <!-- Botón Cerrar Turno / Salir -->
+        <button onclick="logoutDriver()" title="Cerrar turno de conductor y salir a la pantalla de login" class="px-2.5 sm:px-3 py-1.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all flex items-center gap-1 shadow-md">
+          <span>🚪</span>
+          <span class="hidden sm:inline">Salir</span>
+        </button>
+
+        <a href="/" class="p-2 rounded-full bg-[#181D26] hover:bg-[#222938] text-[#8A94A6] hover:text-white border border-[#28303F] transition-all" title="Ir al Hub">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+        </a>
+      </div>
+    </header>
+
+    <!-- BANNER DE ESTADO CUANDO ESTÁ OFFLINE -->
+    <div id="offlineNoticeBanner" class="hidden bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 text-center text-xs text-amber-300 font-semibold flex items-center justify-center gap-2">
+      <span>⚠️ Estás en modo <strong>DESCONECTADO</strong>. Activa tu estado para recibir pedidos y comisiones.</span>
+      <button onclick="toggleDriverOnline()" class="underline font-bold text-amber-200 hover:text-white">Conectarse ahora</button>
+    </div>
+
+    <!-- MODO 1: CONSOLA EXTENDIDA / COCKPIT DE ESCRITORIO (3 COLUMNAS BALANCEADAS) -->
+    <div id="cockpitContainer" class="flex-1 grid grid-cols-1 lg:grid-cols-12 relative overflow-hidden h-[calc(100vh-62px)]">
+
+      <!-- COLUMNA 1 (IZQUIERDA, 3.5 cols): GESTIÓN OPERATIVA & PEDIDOS -->
+      <aside class="lg:col-span-4 xl:col-span-3 bg-[#101217] border-r border-[#1F242D] flex flex-col justify-between overflow-y-auto p-4 space-y-4 z-10 shadow-2xl">
+        
+        <div class="space-y-4">
+          
+          <!-- TARJETA RESUMEN DE GANANCIAS DEL DÍA -->
+          <div class="bg-gradient-to-br from-[#181D26] to-[#0E1015] border border-[#28303F] rounded-2xl p-4 relative overflow-hidden shadow-lg">
+            <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-[#06C167]/10 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div class="flex items-center justify-between text-xs text-[#8A94A6] mb-1">
+              <span class="font-bold uppercase tracking-wider">Ganancias de Hoy</span>
+              <span class="text-[#06C167] font-semibold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#06C167]"></span>
+                80% Neta Driver
+              </span>
+            </div>
+
+            <div class="flex items-baseline justify-between mt-1">
+              <div>
+                <span class="text-3xl font-black text-white font-mono tracking-tight" id="todayEarningsText">C$ 560.00</span>
+                <span class="text-xs text-[#6C768A] ml-1">NIO</span>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-bold text-white font-mono" id="todayTripsCount">4</span>
+                <span class="text-[11px] text-[#6C768A] block">Entregas</span>
+              </div>
+            </div>
+
+            <div class="mt-3 pt-3 border-t border-[#222938] flex items-center justify-between text-[11px] text-[#8A94A6]">
+              <span>Batería: <strong class="text-white font-mono" id="batteryLevelText">95%</strong></span>
+              <span>Calificación: <strong class="text-amber-400 font-mono">⭐ 4.95</strong></span>
+              <span>Vehículo: <strong class="text-white">Moto</strong></span>
+            </div>
+          </div>
+
+          <!-- TARJETA: PEDIDO EN CURSO (SI HAY UNO ASIGNADO) -->
+          <div id="activeOrderCard" class="hidden bg-[#151922] border-2 border-[#06C167] rounded-2xl p-4 shadow-xl space-y-3">
+            <div class="flex items-center justify-between">
+              <span id="activeOrderBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#06C167]/15 text-[#06C167] border border-[#06C167]/40 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#06C167] animate-ping"></span>
+                EN REPARTO
+              </span>
+              <span id="activeOrderIdText" class="font-mono text-xs text-[#8A94A6]">#----</span>
+            </div>
+
+            <!-- Título del Paso Actual -->
+            <div class="space-y-1">
+              <h4 id="activeStepTitle" class="text-sm font-extrabold text-white">Dirígete al Restaurante</h4>
+              <p id="activeStepSubtitle" class="text-xs text-[#8A94A6]">Recoge los productos y verifica la comanda en cocina.</p>
+            </div>
+
+            <!-- Puntos de Ruta Origen -> Destino -->
+            <div class="space-y-2 bg-[#0C0E12] p-3 rounded-xl border border-[#222834] text-xs">
+              <div class="flex items-start gap-2.5">
+                <span class="text-base">🏪</span>
+                <div class="truncate">
+                  <span class="font-bold text-white block truncate" id="activeRestName">Restaurante</span>
+                  <span class="text-[11px] text-[#6C768A] block truncate" id="activeRestAddress">Dirección</span>
+                </div>
+              </div>
+              <div class="pl-2.5 py-0.5">
+                <div class="w-0.5 h-3 bg-[#06C167]/40 ml-1"></div>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-base">📍</span>
+                <div class="truncate">
+                  <span class="font-bold text-white block truncate" id="activeClientName">Cliente</span>
+                  <span class="text-[11px] text-[#6C768A] block truncate" id="activeClientAddress">Dirección de Entrega</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Checklist de Ítems (Fase 2) -->
+            <div id="itemsChecklistContainer" class="hidden bg-[#0C0E12] border border-[#222834] rounded-xl p-3 space-y-2">
+              <div class="flex items-center justify-between text-xs font-bold text-[#8A94A6] uppercase tracking-wider">
+                <span>Verificación de Comanda</span>
+                <span class="text-[10px] text-[#06C167]">Revisar en cocina</span>
+              </div>
+              <div id="itemsChecklist" class="space-y-1.5 text-xs text-white max-h-36 overflow-y-auto"></div>
+            </div>
+
+            <!-- Aviso de Cobro en Efectivo -->
+            <div id="cashCollectionNotice" class="hidden bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl text-xs text-amber-300 flex items-center justify-between">
+              <span>💵 <strong>Cobro en Efectivo:</strong></span>
+              <strong id="cashAmountToCollect" class="font-mono text-white text-sm">C$ 0.00</strong>
+            </div>
+
+            <!-- BOTONES DE ACCIÓN PRINCIPALES DEL PEDIDO -->
+            <div class="space-y-2 pt-1">
+              <button id="stepActionBtn" onclick="handleStepAdvance()" class="w-full py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider bg-[#06C167] text-black hover:bg-[#05A357] shadow-xl shadow-[#06C167]/25 transition-all flex items-center justify-center gap-2">
+                <span id="stepActionBtnText">LLEGUÉ AL LOCAL</span>
+                <span>→</span>
+              </button>
+
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="launchExternalNavigation()" class="py-2 px-3 rounded-xl bg-[#1F242F] hover:bg-[#28303F] text-white border border-[#2E3747] font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
+                  <span>🧭</span>
+                  <span>Navegar GPS</span>
+                </button>
+                <button onclick="callContactPhone()" class="py-2 px-3 rounded-xl bg-[#1F242F] hover:bg-[#28303F] text-white border border-[#2E3747] font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
+                  <span>📞</span>
+                  <span>Llamar</span>
+                </button>
+              </div>
+
+              <!-- Simulador de Telemetría GPS -->
+              <div class="pt-2 border-t border-[#222834] flex items-center justify-between">
+                <button id="simGpsBtn" onclick="toggleGpsSimulation()" class="text-[11px] text-[#06C167] font-bold hover:underline flex items-center gap-1">
+                  <span>📡</span>
+                  <span id="simGpsBtnText">Simular GPS en Vivo</span>
+                </button>
+                <span id="gpsSimStatus" class="text-[10px] text-[#6C768A] font-mono">En reposo</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: OPORTUNIDADES EN ZONA (CUANDO ESTÁ LIBRE) -->
+          <div id="idleStateSection" class="space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-[#06C167]"></span>
+                Oportunidades en Zona
+              </span>
+              <span class="text-[10px] text-[#6C768A] font-mono" id="availableOrdersCount">Buscando...</span>
+            </div>
+
+            <div id="readyOrdersList" class="space-y-2"></div>
+
+            <div id="searchingRadarBox" class="p-6 text-center bg-[#0C0E12] border border-[#1F242D] rounded-2xl flex flex-col items-center justify-center gap-3">
+              <div class="relative w-14 h-14 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border border-[#06C167]/30 animate-ping"></div>
+                <div class="absolute inset-2 rounded-full border border-[#06C167]/50 animate-pulse"></div>
+                <span class="text-2xl">📡</span>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white">Buscando pedidos cercanos</h4>
+                <p class="text-[11px] text-[#6C768A] mt-0.5">Te notificaremos inmediatamente con alarma sonora cuando haya una oferta.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="pt-3 border-t border-[#1F242D] flex items-center justify-between text-[11px] text-[#6C768A]">
+          <span class="flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#06C167]"></span>
+            Motor OSRM :4000
+          </span>
+          <span class="font-mono text-white">Managua, NI</span>
+        </div>
+      </aside>
+
+      <!-- COLUMNA 2 (CENTRO, 5.5 cols): MAPA EN VIVO INTERACTIVO CON CONTROLES HUD -->
+      <main class="lg:col-span-5 xl:col-span-6 relative h-[50vh] lg:h-full bg-[#07080B] flex flex-col">
+        
+        <!-- BARRA SUPERIOR FLOTANTE DEL MAPA (HUD) -->
+        <div class="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+          <div class="bg-[#12151D]/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-[#283244] shadow-xl text-xs font-bold text-white flex items-center gap-2 pointer-events-auto">
+            <span class="w-2 h-2 rounded-full bg-[#06C167] animate-pulse"></span>
+            <span>📍 Managua Centro</span>
+            <span class="text-[10px] text-[#06C167] bg-[#06C167]/15 px-2 py-0.5 rounded-full border border-[#06C167]/30">Alta Demanda 🔥</span>
+          </div>
+
+          <!-- Selector de Capas del Mapa -->
+          <div class="flex items-center gap-1.5 bg-[#12151D]/90 backdrop-blur-md p-1 rounded-full border border-[#283244] shadow-xl pointer-events-auto">
+            <button onclick="setMapStyle('dark')" class="px-2.5 py-1 rounded-full text-[11px] font-bold text-white hover:bg-[#202737] transition-all" title="Modo Oscuro">
+              🌙 Noche
+            </button>
+            <button onclick="setMapStyle('streets')" class="px-2.5 py-1 rounded-full text-[11px] font-bold text-[#8A94A6] hover:text-white hover:bg-[#202737] transition-all" title="Modo Calles Claras">
+              🗺️ Calles
+            </button>
+            <button onclick="centerMapOnDriver()" class="px-2 py-1 rounded-full text-[11px] font-bold text-[#06C167] hover:bg-[#06C167]/20 transition-all" title="Centrar en mi ubicación">
+              🎯 Centrar
+            </button>
+          </div>
+        </div>
+
+        <!-- CONTENEDOR DEL MAPA MAPLIBRE GL -->
+        <div id="driverMap" class="w-full h-full relative"></div>
+
+        <!-- BADGE INFERIOR FLOTANTE CON VELOCIDAD Y RUTA -->
+        <div class="absolute bottom-4 left-4 z-20 pointer-events-none">
+          <div class="bg-[#12151D]/90 backdrop-blur-md border border-[#283244] px-3.5 py-2 rounded-2xl shadow-2xl flex items-center gap-3 pointer-events-auto">
+            <div class="flex items-baseline gap-1">
+              <span id="hudSpeedText" class="text-xl font-black font-mono text-[#06C167]">28</span>
+              <span class="text-[10px] font-bold text-[#8A94A6]">KM/H</span>
+            </div>
+            <div class="h-6 w-px bg-[#262D3B]"></div>
+            <div class="text-[11px]">
+              <span class="font-bold text-white block">Rumbo 45° NE</span>
+              <span class="text-[10px] text-[#6C768A]">Telemetría GPS Activa</span>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- COLUMNA 3 (DERECHA, 3 cols): TELEMETRÍA, INSTRUMENTACIÓN Y HISTORIAL -->
+      <aside class="hidden lg:flex lg:col-span-3 xl:col-span-3 bg-[#101217] border-l border-[#1F242D] flex-col justify-between p-4 space-y-4 overflow-y-auto">
+        
+        <div class="space-y-4">
+          
+          <div class="flex items-center justify-between text-xs font-bold text-white uppercase tracking-wider pb-2 border-b border-[#1F242D]">
+            <span>Instrumentación en Vivo</span>
+            <span class="text-[10px] text-[#06C167] font-mono">ENLACE ACTIVO</span>
+          </div>
+
+          <!-- VELOCÍMETRO / INSTRUMENTO DE TELEMETRÍA -->
+          <div class="bg-gradient-to-br from-[#151922] to-[#0D0F14] border border-[#222938] rounded-2xl p-4 text-center relative overflow-hidden speedo-glow">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-[#8A94A6]">Velocidad de Desplazamiento</span>
+            <div class="my-2 flex items-baseline justify-center gap-1.5">
+              <span id="cockpitSpeedVal" class="text-5xl font-black font-mono tracking-tight text-white">28</span>
+              <span class="text-xs font-bold text-[#06C167]">km/h</span>
+            </div>
+            <div class="w-full bg-[#1F242D] h-2 rounded-full overflow-hidden mt-3">
+              <div id="speedoProgressBar" class="h-full bg-gradient-to-r from-[#06C167] to-emerald-300 w-1/3 transition-all duration-500"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-[#6C768A] mt-1 font-mono">
+              <span>0 km/h</span>
+              <span>Límite Urbano 45</span>
+              <span>80 km/h</span>
+            </div>
+          </div>
+
+          <!-- GAUGES DE COORDENADAS Y PRECISIÓN -->
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-[#151922] p-3 rounded-xl border border-[#222834]">
+              <span class="text-[10px] text-[#6C768A] block uppercase font-bold">Latitud</span>
+              <span id="gaugeLatText" class="font-mono font-bold text-white text-[11px]">12.1260° N</span>
+            </div>
+            <div class="bg-[#151922] p-3 rounded-xl border border-[#222834]">
+              <span class="text-[10px] text-[#6C768A] block uppercase font-bold">Longitud</span>
+              <span id="gaugeLngText" class="font-mono font-bold text-white text-[11px]">-86.2650° W</span>
+            </div>
+            <div class="bg-[#151922] p-3 rounded-xl border border-[#222834]">
+              <span class="text-[10px] text-[#6C768A] block uppercase font-bold">Señal GPS</span>
+              <span class="font-bold text-[#06C167] text-[11px] flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#06C167]"></span>
+                Precisión ±3m
+              </span>
+            </div>
+            <div class="bg-[#151922] p-3 rounded-xl border border-[#222834]">
+              <span class="text-[10px] text-[#6C768A] block uppercase font-bold">Canal Realtime</span>
+              <span class="font-mono text-white text-[11px]">orders:tracking</span>
+            </div>
+          </div>
+
+          <!-- DESGLOSE DE TURNO Y COMISIONES -->
+          <div class="bg-[#151922] border border-[#222834] rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-white uppercase tracking-wider">Desglose de Turno</span>
+              <span class="text-[10px] text-[#06C167] font-bold">Retención 0%</span>
+            </div>
+            <div class="space-y-1.5 text-xs">
+              <div class="flex justify-between text-[#8A94A6]">
+                <span>Tarifas cobradas:</span>
+                <span class="font-mono text-white font-bold">C$ 700.00</span>
+              </div>
+              <div class="flex justify-between text-[#8A94A6]">
+                <span>Comisión de app (20%):</span>
+                <span class="font-mono text-red-400">-C$ 140.00</span>
+              </div>
+              <div class="flex justify-between text-[#8A94A6]">
+                <span>Propinas recibidas:</span>
+                <span class="font-mono text-amber-400 font-bold">+C$ 60.00</span>
+              </div>
+              <div class="pt-2 border-t border-[#222834] flex justify-between font-bold text-white">
+                <span>Total a Billetera:</span>
+                <span class="font-mono text-[#06C167] text-sm">C$ 620.00 NIO</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="pt-3 border-t border-[#1F242D] text-[10px] text-[#6C768A] text-center">
+          Telemetría y Despacho en Tiempo Real • PedidosNica Driver
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- MODO 2: VISTA SMARTPHONE SIMULADA (PARA PRUEBAS 1:1 EN ESCRITORIO O PANTALLAS GRANDES) -->
+    <div id="phoneViewContainer" class="hidden flex-1 items-center justify-center p-4 bg-[#050608] overflow-hidden">
+      <div class="phone-frame flex flex-col relative">
+        
+        <!-- Notch / Cámara Superior del Smartphone -->
+        <div class="phone-notch">
+          <div class="speaker"></div>
+          <div class="camera"></div>
+        </div>
+
+        <!-- Barra de Estado Android / iOS -->
+        <div class="px-6 pt-2 pb-1 flex items-center justify-between text-[11px] font-bold text-white z-40 bg-gradient-to-b from-black/80 to-transparent">
+          <span>9:41</span>
+          <div class="flex items-center gap-1 text-[10px]">
+            <span>5G</span>
+            <span>📶</span>
+            <span>🔋 95%</span>
+          </div>
+        </div>
+
+        <!-- Contenedor del Mapa en el Smartphone -->
+        <div class="flex-1 relative bg-black">
+          <div id="phoneDriverMap" class="w-full h-full"></div>
+
+          <!-- Botón flotante superior para volver a modo escritorio -->
+          <button onclick="switchViewMode('cockpit')" class="absolute top-10 right-4 z-40 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-[#333] text-[10px] font-bold text-white hover:text-[#06C167] shadow-xl flex items-center gap-1">
+            <span>🖥️</span> Salir de vista móvil
+          </button>
+
+          <!-- BOTTOM SHEET FLOTANTE DEL SMARTPHONE (IGUAL QUE EN ANDROID) -->
+          <div class="absolute bottom-0 left-0 right-0 z-30 bg-[#14161C] border-t border-[#262D3B] rounded-t-3xl p-4 shadow-2xl space-y-3">
+            <div class="w-10 h-1 bg-[#2C3444] rounded-full mx-auto -mt-1 mb-2"></div>
+            
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold text-[#8A94A6] uppercase">Ganancias de Hoy</span>
+                <p class="text-xl font-black text-white font-mono" id="phoneEarningsText">C$ 560.00</p>
+              </div>
+              <button onclick="toggleDriverOnline()" id="phoneOnlineBtn" class="px-3.5 py-1.5 rounded-full text-xs font-black bg-[#06C167] text-black">
+                EN LÍNEA
+              </button>
+            </div>
+
+            <!-- Resumen de viaje activo en el teléfono -->
+            <div id="phoneActiveTripSnippet" class="p-3 rounded-xl bg-[#0D0F14] border border-[#222834] text-xs">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-[#06C167] text-[11px]" id="phoneTripTitle">Esperando pedidos...</span>
+                <span class="font-mono text-[#8A94A6]" id="phoneTripFare">80% Neto</span>
+              </div>
+              <p class="text-[11px] text-[#8A94A6] truncate" id="phoneTripSubtitle">Zona activa: Managua Central</p>
+            </div>
+
+            <!-- Pedidos Disponibles en Zona para Smartphone -->
+            <div id="phoneAvailableOrdersContainer" class="hidden space-y-2 max-h-48 overflow-y-auto pt-1">
+              <div class="flex items-center justify-between text-[10px] font-bold text-white uppercase">
+                <span>Oportunidades en Zona</span>
+                <span id="phoneAvailableCountBadge" class="text-[#06C167]">0</span>
+              </div>
+              <div id="phoneAvailableOrdersList" class="space-y-1.5"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    </div>
+
+    <!-- MODAL DE OFERTA DE ALTA PRIORIDAD (20 SEGUNDOS COUNTDOWN) -->
+    <div id="incomingOfferModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="bg-[#14161D] border-2 border-[#06C167] rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative overflow-hidden animate-bounce-short">
+        
+        <!-- Header con Temporizador Circular de 20 Segundos -->
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="p-2 rounded-xl bg-[#06C167]/15 text-[#06C167] text-lg">⚡</span>
+            <div>
+              <span class="text-[10px] font-bold text-[#06C167] uppercase tracking-wider block">¡NUEVA OFERTA DE PEDIDO!</span>
+              <h3 class="text-lg font-black text-white">Tienes 20s para Aceptar</h3>
+            </div>
+          </div>
+
+          <!-- SVG Circular Countdown -->
+          <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
+            <svg class="w-12 h-12 transform -rotate-90">
+              <circle cx="24" cy="24" r="20" stroke="#262626" stroke-width="4" fill="none"/>
+              <circle id="timerCircle" cx="24" cy="24" r="20" stroke="#06C167" stroke-width="4" fill="none" stroke-dasharray="125.6" stroke-dashoffset="0" class="transition-all duration-1000"/>
+            </svg>
+            <span id="timerSecondsText" class="absolute font-mono font-black text-sm text-white">20</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Ganancia Estimada -->
+        <div class="bg-black/60 border border-[#2E2E2E] rounded-2xl p-4 text-center my-4">
+          <span class="text-xs text-[#8A94A6] block uppercase tracking-wider">Tu Ganancia Estimada</span>
+          <div class="flex items-baseline justify-center gap-1.5 mt-1">
+            <span class="text-4xl font-black text-[#06C167] font-mono tracking-tight" id="offerPayoutText">C$ 56.00</span>
+            <span class="text-xs text-[#6C768A] font-bold">NIO</span>
+          </div>
+          <p class="text-[11px] text-[#8A94A6] mt-1">Distancia estimada: <strong id="offerDistanceText" class="text-white">2.8 km</strong></p>
+        </div>
+
+        <!-- Detalles de Origen y Destino -->
+        <div class="space-y-2.5 text-xs bg-[#1C2029] p-3.5 rounded-xl border border-[#2B3342] mb-5">
+          <div class="flex items-start gap-2.5">
+            <span class="text-base">🏪</span>
+            <div>
+              <strong id="offerRestName" class="text-white block font-bold text-xs sm:text-sm">Pupusería & Antojitos El Diamante</strong>
+              <span id="offerRestAddress" class="text-[#8A94A6] text-[11px] block">Colonial Los Robles, Managua</span>
+            </div>
+          </div>
+          <div class="flex items-start gap-2.5 pt-2 border-t border-[#2B3342]">
+            <span class="text-base">📍</span>
+            <div>
+              <strong id="offerClientAddress" class="text-white block font-bold text-xs sm:text-sm">Galerías Santo Domingo, Managua</strong>
+              <span id="offerItemsSummary" class="text-[#8A94A6] text-[11px] block">2 ítems • Prep. Lista</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Aceptar / Rechazar -->
+        <div class="space-y-2">
+          <button id="acceptOfferBtn" onclick="acceptIncomingOffer()" class="w-full py-4 px-4 rounded-2xl font-black text-sm uppercase tracking-wider bg-[#06C167] text-black hover:bg-[#05A357] shadow-xl shadow-[#06C167]/30 transition-all flex items-center justify-center gap-2">
+            <span>ACEPTAR PEDIDO</span>
+            <span id="acceptBtnAmount" class="font-mono">(C$ 56.00)</span>
+          </button>
+          <button onclick="rejectIncomingOffer()" class="w-full py-2.5 px-4 rounded-xl font-bold text-xs text-[#8A94A6] hover:text-white hover:bg-[#202737] transition-colors">
+            Rechazar / Pasar al siguiente
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    
+    <!-- ================================================================ -->
+    <!-- MODAL: PERFIL DE CONDUCTOR Y CAMBIO DE CUENTA (RBAC) -->
+    <!-- ================================================================ -->
+    <div id="modalDriverProfile" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="bg-[#14161D] border-2 border-[#06C167]/40 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-xs">
+        <div class="flex items-center justify-between pb-3 border-b border-[#262D3B]">
+          <div class="flex items-center gap-2">
+            <span class="p-2 rounded-xl bg-[#06C167]/20 text-[#06C167] text-lg">🛵</span>
+            <div>
+              <h3 class="text-sm font-black text-white">Perfil del Repartidor</h3>
+              <p class="text-[10px] text-[#8A94A6]">Edita tus datos o cambia de conductor</p>
+            </div>
+          </div>
+          <button onclick="closeDriverProfileModal()" class="text-[#8A94A6] hover:text-white p-1 text-base">✕</button>
+        </div>
+
+        <!-- Identidad Personal del Conductor (Perfil Aislado) -->
+        <div class="p-3.5 rounded-2xl bg-[#181D26] border-2 border-[#06C167]/40 flex items-center justify-between shadow-lg">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#06C167]/20 border border-[#06C167]/50 flex items-center justify-center text-xl">
+              🛵
+            </div>
+            <div>
+              <p class="font-black text-white text-sm" id="driverProfileCardName">Carlos Gómez</p>
+              <p class="text-[10px] text-[#8A94A6]" id="driverProfileCardSubtitle">Conductor Independiente • Turno Activo</p>
+            </div>
+          </div>
+          <span class="text-xs font-mono font-bold text-amber-400 bg-black px-2 py-1 rounded-lg border border-amber-500/30">⭐ 4.90</span>
+        </div>
+
+        <!-- Formulario de Edición de Perfil de Conductor -->
+        <div class="pt-3 border-t border-[#222938] space-y-2.5">
+          <span class="text-[11px] font-bold text-white block">Editar Datos de mi Perfil:</span>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-[#8A94A6] mb-0.5">Nombre Completo</label>
+              <input type="text" id="driverProfileNameInput" value="Martín Rivas" class="w-full bg-[#0D0F14] border border-[#262D3B] rounded-xl p-2 text-white text-xs outline-none focus:border-[#06C167]" />
+            </div>
+            <div>
+              <label class="block text-[10px] text-[#8A94A6] mb-0.5">Teléfono Móvil</label>
+              <input type="text" id="driverProfilePhoneInput" value="+505 8899-7766" class="w-full bg-[#0D0F14] border border-[#262D3B] rounded-xl p-2 text-white text-xs outline-none focus:border-[#06C167]" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-[#8A94A6] mb-0.5">Tipo de Vehículo</label>
+              <select id="driverProfileVehicleTypeInput" class="w-full bg-[#0D0F14] border border-[#262D3B] rounded-xl p-2 text-white text-xs outline-none focus:border-[#06C167]">
+                <option value="MOTORCYCLE">Motocicleta</option>
+                <option value="BICYCLE">Bicicleta</option>
+                <option value="CAR">Automóvil</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] text-[#8A94A6] mb-0.5">Placa / Matrícula</label>
+              <input type="text" id="driverProfilePlateInput" value="A482XYZ" class="w-full bg-[#0D0F14] border border-[#262D3B] rounded-xl p-2 text-white text-xs outline-none focus:border-[#06C167]" />
+            </div>
+          </div>
+
+          <button onclick="saveDriverProfile()" class="w-full py-2.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-extrabold text-xs transition-colors shadow-lg shadow-[#06C167]/25">
+            Guardar Cambios de Perfil
+          </button>
+        </div>
+
+        <!-- Historial de Entregas Recientes en el Turno -->
+        <div class="pt-3 border-t border-[#222834]">
+          <p class="text-[11px] font-bold uppercase text-[#8A94A6] mb-2">Historial de Entregas Recientes</p>
+          <div id="driverHistoryList" class="space-y-1.5 max-h-36 overflow-y-auto text-xs text-[#8A94A6]">Cargando historial...</div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-[#222938]">
+          <button onclick="logoutDriver()" class="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all flex items-center gap-1.5">
+            <span>🚪</span> Cerrar Turno / Salir
+          </button>
+          <button onclick="closeDriverProfileModal()" class="px-4 py-2 rounded-xl bg-[#222] hover:bg-[#333] text-white font-bold text-xs">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DE ENTREGA COMPLETADA CON ÉXITO -->
+    <div id="deliveredSuccessModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="bg-[#14161D] border-2 border-[#06C167] rounded-3xl p-7 max-w-sm w-full text-center shadow-2xl space-y-4 animate-scale-up">
+        <div class="w-16 h-16 rounded-full bg-[#06C167]/20 text-[#06C167] flex items-center justify-center text-3xl mx-auto border-2 border-[#06C167]">
+          ✓
+        </div>
+        <div>
+          <h3 class="text-xl font-black text-white">¡Entrega Completada!</h3>
+          <p class="text-xs text-[#8A94A6] mt-1">Has entregado el pedido con éxito al cliente.</p>
+        </div>
+        <div class="bg-black/60 p-3.5 rounded-2xl border border-[#2E2E2E]">
+          <span class="text-xs text-[#8A94A6]">Ganancia Acreditada</span>
+          <p id="successPayoutEarned" class="text-3xl font-black text-[#06C167] font-mono mt-0.5">+C$ 56.00</p>
+        </div>
+        <button onclick="closeSuccessModal()" class="w-full py-3.5 rounded-xl font-bold text-xs bg-[#06C167] text-black hover:bg-[#05A357] transition-all">
+          Listo para el siguiente viaje
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCRIPT CLIENTE ESPECÍFICO DEL DRIVER APP -->
+  <script>
+// ============================================================================
+// PEDIDOSNICA DRIVER - FRONTEND OPERATIVO Y TELEMETRÍA EN TIEMPO REAL
+// ============================================================================
+
+(function () {
+  'use strict';
+
+  const SUPABASE_URL = 'https://zciujeihkvleehhqbeat.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjaXVqZWloa3ZsZWVoaHFiZWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxMjgyMzMsImV4cCI6MjEwNTcwNDIzM30.OLauEB8NwNxVb8hMzK9X8cJPXVKkpwzoh6FmrHnQ55w';
+  const DEFAULT_DRIVER_ID = '6c5c143c-e567-4e1d-85b7-d4f984628816';
+
+  let currentDriverId = (function() {
+    try {
+      return localStorage.getItem('pedidosnica_driver_id') || DEFAULT_DRIVER_ID;
+    } catch (e) {
+      return DEFAULT_DRIVER_ID;
+    }
+  })();
+
+  let pedidosnica_driver_session = null;
+  let isOnline = true;
+  let currentViewMode = 'cockpit'; // 'cockpit' | 'phone'
+  let driverProfile = null;
+  let activeOrder = null;
+  let currentStep = 'NONE'; // 'NONE' | 'TO_REST' | 'IN_KITCHEN' | 'TO_CLIENT' | 'DELIVERING' | 'DELIVERED'
+  let currentCoordinates = { lng: -86.2650, lat: 12.1260 }; // Managua centro (Los Robles)
+
+  // MapLibre Instances & Markers
+  let driverMap = null;
+  let phoneMap = null;
+  let driverMarker = null;
+  let phoneDriverMarker = null;
+  let restaurantMarker = null;
+  let deliveryMarker = null;
+
+  // Supabase Client & Realtime Channels
+  let supabase = null;
+  let dispatchChannel = null;
+  let orderTrackingChannel = null;
+
+  // Timers & Intervals
+  let offerCountdownTimer = null;
+  let offerSecondsLeft = 20;
+  let currentOfferPayload = null;
+  let gpsSimInterval = null;
+  let gpsSimProgress = 0;
+  let ordersPollInterval = null;
+
+  // Helper de formateo de vehículo
+  function formatVehicleLabel(vt) {
+    if (vt === 'BICYCLE') return 'Bicicleta Pro';
+    if (vt === 'CAR') return 'Automóvil';
+    return 'Moto Honda 150';
+  }
+
+  // Cálculo de distancia Haversine en kilómetros
+  function calculateDistanceKm(coord1, coord2) {
+    if (!coord1 || !coord2 || typeof coord1.lat !== 'number' || typeof coord2.lat !== 'number' || typeof coord1.lng !== 'number' || typeof coord2.lng !== 'number') {
+      return '2.5';
+    }
+    const R = 6371; // radio terrestre en km
+    const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
+    const dLng = (coord2.lng - coord1.lng) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(coord1.lat * Math.PI / 180) * Math.cos(coord2.lat * Math.PI / 180) *
+              Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return (R * c).toFixed(1);
+  }
+
+  // Modal de Perfil de Conductor
+  window.openDriverProfileModal = function() {
+    const modal = document.getElementById('modalDriverProfile');
+    if (modal) modal.classList.remove('hidden');
+    fillDriverProfileForm();
+  };
+
+  window.closeDriverProfileModal = function() {
+    const modal = document.getElementById('modalDriverProfile');
+    if (modal) modal.classList.add('hidden');
+  };
+
+  // ==========================================================================
+  // SESIÓN INDEPENDIENTE DE CONDUCTOR Y BLOQUEO DE RESTAURANTES
+  // ==========================================================================
+  function initDriverAuth() {
+    // 1. Bloqueo estricto: Verificar si el usuario actual es de Restaurante
+    try {
+      const restSession = JSON.parse(localStorage.getItem('pedidosnica_rest_session') || localStorage.getItem('pedidosnica_rest_user') || 'null');
+      if (restSession && (restSession.role === 'RESTAURANT_ADMIN' || restSession.subrole === 'STAFF')) {
+        const blockedNotice = document.getElementById('restaurantBlockedDriverNotice');
+        const rootContent = document.getElementById('driverAppRootContent');
+        const loginGate = document.getElementById('driverLoginGate');
+
+        if (blockedNotice) blockedNotice.classList.remove('hidden');
+        if (rootContent) rootContent.classList.add('hidden');
+        if (loginGate) loginGate.classList.add('hidden');
+        return false;
+      }
+    } catch (e) {}
+
+    const blockedNotice = document.getElementById('restaurantBlockedDriverNotice');
+    if (blockedNotice) blockedNotice.classList.add('hidden');
+
+    // 2. Verificar sesión de conductor
+    try {
+      const stored = localStorage.getItem('pedidosnica_driver_session');
+      if (stored) {
+        pedidosnica_driver_session = JSON.parse(stored);
+      }
+    } catch (e) {}
+
+    const rootContent = document.getElementById('driverAppRootContent');
+    const loginGate = document.getElementById('driverLoginGate');
+
+    if (!pedidosnica_driver_session || !pedidosnica_driver_session.id) {
+      if (loginGate) loginGate.classList.remove('hidden');
+      if (rootContent) rootContent.classList.add('hidden');
+      return false;
+    }
+
+    if (loginGate) loginGate.classList.add('hidden');
+    if (rootContent) rootContent.classList.remove('hidden');
+
+    currentDriverId = pedidosnica_driver_session.id;
+    localStorage.setItem('pedidosnica_driver_id', currentDriverId);
+
+    // Actualizar datos del conductor en la barra superior y modal
+    const nameHeader = document.getElementById('driverNameHeader');
+    const vehicleHeader = document.getElementById('driverVehicleHeader');
+    const plateHeader = document.getElementById('driverPlateHeader');
+    const cardName = document.getElementById('driverProfileCardName');
+    const cardSub = document.getElementById('driverProfileCardSubtitle');
+
+    if (nameHeader) nameHeader.innerText = pedidosnica_driver_session.full_name || 'Conductor';
+    if (cardName) cardName.innerText = pedidosnica_driver_session.full_name || 'Conductor';
+    if (vehicleHeader) vehicleHeader.innerText = formatVehicleLabel(pedidosnica_driver_session.vehicle_type);
+    if (plateHeader) plateHeader.innerText = pedidosnica_driver_session.license_plate || 'A482XYZ';
+    if (cardSub) {
+      const vPrefix = pedidosnica_driver_session.vehicle_type === 'BICYCLE' ? 'Bicicleta' : (pedidosnica_driver_session.vehicle_type === 'CAR' ? 'Automóvil' : 'Moto');
+      cardSub.innerText = vPrefix + ' • ' + (pedidosnica_driver_session.license_plate || '');
+    }
+
+    fillDriverProfileForm();
+    return true;
+  }
+
+  window.logoutRestaurantSessionFromDriver = function() {
+    localStorage.removeItem('pedidosnica_rest_session');
+    localStorage.removeItem('pedidosnica_rest_user');
+    initDriverAuth();
+  };
+
+  // Pestañas de Login vs Registro en el Portal de Entrada
+  window.switchDriverAuthTab = function(tab) {
+    const loginBox = document.getElementById('driverLoginFormBox');
+    const regBox = document.getElementById('driverRegisterFormBox');
+    const tabLoginBtn = document.getElementById('tabDriverLoginBtn');
+    const tabRegBtn = document.getElementById('tabDriverRegisterBtn');
+
+    if (tab === 'register') {
+      if (loginBox) loginBox.classList.add('hidden');
+      if (regBox) regBox.classList.remove('hidden');
+      if (tabRegBtn) {
+        tabRegBtn.className = 'flex-1 py-2 rounded-xl text-xs font-black transition-all bg-[#06C167] text-black shadow-md cursor-pointer';
+      }
+      if (tabLoginBtn) {
+        tabLoginBtn.className = 'flex-1 py-2 rounded-xl text-xs font-bold transition-all text-[#8A94A6] hover:text-white cursor-pointer';
+      }
+    } else {
+      if (regBox) regBox.classList.add('hidden');
+      if (loginBox) loginBox.classList.remove('hidden');
+      if (tabLoginBtn) {
+        tabLoginBtn.className = 'flex-1 py-2 rounded-xl text-xs font-black transition-all bg-[#06C167] text-black shadow-md cursor-pointer';
+      }
+      if (tabRegBtn) {
+        tabRegBtn.className = 'flex-1 py-2 rounded-xl text-xs font-bold transition-all text-[#8A94A6] hover:text-white cursor-pointer';
+      }
+    }
+  };
+
+  window.loginDriverWithForm = async function() {
+    const emailInput = document.getElementById('driverLoginEmail');
+    const passInput = document.getElementById('driverLoginPassword');
+    if (!emailInput || !passInput) return;
+    await loginDriver(emailInput.value.trim(), passInput.value.trim());
+  };
+
+  window.quickFillDriverLogin = async function(email, password) {
+    const emailInput = document.getElementById('driverLoginEmail');
+    const passInput = document.getElementById('driverLoginPassword');
+    if (emailInput) emailInput.value = email;
+    if (passInput) passInput.value = password;
+    await loginDriver(email, password);
+  };
+
+  async function loginDriver(email, password) {
+    const btn = document.getElementById('btnDriverLoginSubmit');
+    if (btn) {
+      btn.innerText = 'Verificando con plataforma...';
+      btn.disabled = true;
+    }
+
+    try {
+      const resp = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await resp.json();
+
+      if (data.success && data.user) {
+        if (data.user.role !== 'DRIVER') {
+          alert('Esta cuenta no pertenece a un repartidor registrado.');
+          if (btn) {
+            btn.innerText = 'Ingresar y Conectarse';
+            btn.disabled = false;
+          }
+          return;
+        }
+
+        pedidosnica_driver_session = {
+          id: data.user.id,
+          email: data.user.email,
+          full_name: data.user.full_name,
+          phone: data.user.phone,
+          vehicle_type: (data.user.driver_profile && data.user.driver_profile.vehicle_type) || 'MOTORCYCLE',
+          license_plate: (data.user.driver_profile && data.user.driver_profile.license_plate) || 'A482XYZ'
+        };
+
+        localStorage.setItem('pedidosnica_driver_session', JSON.stringify(pedidosnica_driver_session));
+        currentDriverId = data.user.id;
+        localStorage.setItem('pedidosnica_driver_id', currentDriverId);
+
+        const isAuth = initDriverAuth();
+        if (isAuth) {
+          if (!supabase) initSupabase();
+          else { subscribeToDispatchChannel(); subscribeToOrdersChanges(); }
+          if (!driverMap) initMap();
+          await loadDriverProfile();
+          await loadDriverHistoryAndEarnings();
+          await checkActiveOrders();
+          startPollingOrders();
+          playAudioChime(660, 0.2);
+        }
+      } else {
+        alert(data.error || 'Credenciales inválidas de conductor.');
+      }
+    } catch (e) {
+      alert('Error de conexión.');
+    } finally {
+      if (btn) {
+        btn.innerText = 'Ingresar y Conectarse';
+        btn.disabled = false;
+      }
+    }
+  }
+
+  // Registro de nuevo conductor en la plataforma
+  window.registerDriverWithForm = async function() {
+    const nameInp = document.getElementById('regDriverName');
+    const emailInp = document.getElementById('regDriverEmail');
+    const phoneInp = document.getElementById('regDriverPhone');
+    const vehInp = document.getElementById('regDriverVehicle');
+    const plateInp = document.getElementById('regDriverPlate');
+    const passInp = document.getElementById('regDriverPassword');
+    const btn = document.getElementById('btnDriverRegisterSubmit');
+
+    const full_name = nameInp ? nameInp.value.trim() : '';
+    const email = emailInp ? emailInp.value.trim() : '';
+    const phone = phoneInp ? phoneInp.value.trim() : '+505 8888-0000';
+    const vehicle_type = vehInp ? vehInp.value : 'MOTORCYCLE';
+    const license_plate = plateInp ? plateInp.value.trim() : 'M-88991';
+    const password = passInp ? passInp.value.trim() : 'Password123!';
+
+    if (!full_name || !email) {
+      alert('Por favor completa tu nombre completo y correo electrónico.');
+      return;
+    }
+
+    if (btn) {
+      btn.innerText = 'Creando cuenta de repartidor...';
+      btn.disabled = true;
+    }
+
+    try {
+      const resp = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name,
+          email,
+          phone,
+          password,
+          role: 'DRIVER',
+          vehicle_type,
+          license_plate
+        })
+      });
+      const data = await resp.json();
+
+      if (data.success && data.user) {
+        pedidosnica_driver_session = {
+          id: data.user.id,
+          email: data.user.email,
+          full_name: data.user.full_name,
+          phone: data.user.phone,
+          vehicle_type: (data.user.driver_profile && data.user.driver_profile.vehicle_type) || vehicle_type,
+          license_plate: (data.user.driver_profile && data.user.driver_profile.license_plate) || license_plate
+        };
+
+        localStorage.setItem('pedidosnica_driver_session', JSON.stringify(pedidosnica_driver_session));
+        currentDriverId = data.user.id;
+        localStorage.setItem('pedidosnica_driver_id', currentDriverId);
+
+        const isAuth = initDriverAuth();
+        if (isAuth) {
+          if (!supabase) initSupabase();
+          else { subscribeToDispatchChannel(); subscribeToOrdersChanges(); }
+          if (!driverMap) initMap();
+          await loadDriverProfile();
+          await loadDriverHistoryAndEarnings();
+          await checkActiveOrders();
+          startPollingOrders();
+          playAudioChime(660, 0.2);
+        }
+      } else {
+        alert(data.error || 'No se pudo completar el registro del repartidor.');
+      }
+    } catch (e) {
+      console.error('Error al registrar conductor:', e);
+      alert('Error de conexión al registrar conductor.');
+    } finally {
+      if (btn) {
+        btn.innerText = 'Crear Cuenta de Repartidor y Conectarme';
+        btn.disabled = false;
+      }
+    }
+  };
+
+  window.logoutDriver = function() {
+    try {
+      fetch('/api/driver/toggle-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driverId: currentDriverId, status: 'OFFLINE' })
+      }).catch(() => {});
+    } catch (e) {}
+
+    localStorage.removeItem('pedidosnica_driver_session');
+    localStorage.removeItem('pedidosnica_driver_id');
+    pedidosnica_driver_session = null;
+
+    if (ordersPollInterval) {
+      clearInterval(ordersPollInterval);
+      ordersPollInterval = null;
+    }
+    if (gpsSimInterval) {
+      clearInterval(gpsSimInterval);
+      gpsSimInterval = null;
+    }
+
+    closeDriverProfileModal();
+    initDriverAuth();
+  };
+
+  function fillDriverProfileForm() {
+    const session = pedidosnica_driver_session;
+    if (!session) return;
+
+    const nameInp = document.getElementById('driverProfileNameInput');
+    const phoneInp = document.getElementById('driverProfilePhoneInput');
+    const vehInp = document.getElementById('driverProfileVehicleTypeInput');
+    const plateInp = document.getElementById('driverProfilePlateInput');
+
+    if (nameInp) nameInp.value = session.full_name || '';
+    if (phoneInp) phoneInp.value = session.phone || '';
+    if (vehInp) vehInp.value = session.vehicle_type || 'MOTORCYCLE';
+    if (plateInp) plateInp.value = session.license_plate || '';
+
+    loadDriverHistoryAndEarnings();
+  }
+
+  window.saveDriverProfile = async function() {
+    if (!pedidosnica_driver_session) return;
+
+    const nameInp = document.getElementById('driverProfileNameInput');
+    const phoneInp = document.getElementById('driverProfilePhoneInput');
+    const vehInp = document.getElementById('driverProfileVehicleTypeInput');
+    const plateInp = document.getElementById('driverProfilePlateInput');
+
+    const fullName = nameInp ? nameInp.value.trim() : (pedidosnica_driver_session.full_name || 'Conductor');
+    const phone = phoneInp ? phoneInp.value.trim() : '';
+    const vehicleType = vehInp ? vehInp.value : 'MOTORCYCLE';
+    const licensePlate = plateInp ? plateInp.value.trim() : '';
+
+    pedidosnica_driver_session.full_name = fullName;
+    pedidosnica_driver_session.phone = phone;
+    pedidosnica_driver_session.vehicle_type = vehicleType;
+    pedidosnica_driver_session.license_plate = licensePlate;
+    localStorage.setItem('pedidosnica_driver_session', JSON.stringify(pedidosnica_driver_session));
+
+    const nameEl = document.getElementById('driverNameHeader');
+    const cardNameEl = document.getElementById('driverProfileCardName');
+    const plateEl = document.getElementById('driverPlateHeader');
+    const vehEl = document.getElementById('driverVehicleHeader');
+    const cardSub = document.getElementById('driverProfileCardSubtitle');
+
+    if (nameEl) nameEl.innerText = fullName;
+    if (cardNameEl) cardNameEl.innerText = fullName;
+    if (plateEl) plateEl.innerText = licensePlate;
+    if (vehEl) vehEl.innerText = formatVehicleLabel(vehicleType);
+    if (cardSub) {
+      const vPrefix = vehicleType === 'BICYCLE' ? 'Bicicleta' : (vehicleType === 'CAR' ? 'Automóvil' : 'Moto');
+      cardSub.innerText = vPrefix + ' • ' + licensePlate;
+    }
+
+    try {
+      await fetch('/api/auth/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: pedidosnica_driver_session.id,
+          fullName,
+          phone,
+          vehicleType,
+          licensePlate
+        })
+      });
+    } catch (e) {}
+
+    closeDriverProfileModal();
+    playAudioChime(880, 0.25);
+  };
+
+  // Reclamo directo atómico de orden de zona
+  window.claimZoneOrder = async function(orderId) {
+    try {
+      const resp = await fetch('/api/driver/accept-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          driverId: currentDriverId
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        playOfferAlertChime();
+        await checkActiveOrders();
+      } else {
+        alert(data.error || 'Este pedido ya fue tomado por otro conductor en la zona.');
+        await checkActiveOrders();
+      }
+    } catch (e) {
+      console.error('Error claiming order:', e);
+    }
+  };
+
+  // 1. INICIALIZACIÓN AL CARGAR LA PÁGINA
+  window.addEventListener('DOMContentLoaded', async () => {
+    const isAuth = initDriverAuth();
+    if (isAuth) {
+      initSupabase();
+      initMap();
+      await loadDriverProfile();
+      await loadDriverHistoryAndEarnings();
+      await checkActiveOrders();
+      startPollingOrders();
+    }
+  });
+
+  // 2. INICIALIZACIÓN DE SUPABASE & REALTIME WEBSOCKETS
+  function initSupabase() {
+    if (typeof window.supabase !== 'undefined') {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+      subscribeToDispatchChannel();
+      subscribeToOrdersChanges();
+    }
+  }
+
+  function subscribeToDispatchChannel() {
+    if (!supabase || !currentDriverId) return;
+
+    if (dispatchChannel) dispatchChannel.unsubscribe();
+
+    const channelName = `driver-dispatch:${currentDriverId}`;
+    dispatchChannel = supabase.channel(channelName);
+
+    dispatchChannel
+      .on('broadcast', { event: 'new_order_offer' }, ({ payload }) => {
+        console.log('[Driver Web] ¡Nueva oferta de despacho recibida!', payload);
+        handleIncomingOffer(payload);
+      })
+      .subscribe((status) => {
+        console.log(`[Driver Web] Canal de despacho ${channelName}: ${status}`);
+      });
+  }
+
+  function subscribeToOrdersChanges() {
+    if (!supabase) return;
+
+    supabase
+      .channel('driver-general-orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        console.log('[Driver Web] Evento de pedidos en Supabase:', payload.eventType);
+        checkActiveOrders();
+      })
+      .subscribe();
+  }
+
+  // 3. INICIALIZACIÓN DEL MAPA CON MAPLIBRE GL
+  function initMap() {
+    const mapContainer = document.getElementById('driverMap');
+    if (!mapContainer || typeof maplibregl === 'undefined') return;
+
+    // Mapa Cockpit Principal
+    driverMap = new maplibregl.Map({
+      container: 'driverMap',
+      style: 'https://tiles.openfreemap.org/styles/bright',
+      center: [currentCoordinates.lng, currentCoordinates.lat],
+      zoom: 14.5
+    });
+
+    driverMap.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+
+    driverMap.on('load', () => {
+      setupMapLayersAndMarkers(driverMap);
+      if (activeOrder) drawOrderOnMap();
+    });
+  }
+
+  function setupMapLayersAndMarkers(map) {
+    if (!map) return;
+
+    const el = document.createElement('div');
+    el.id = 'driverLivePin';
+    el.className = 'w-11 h-11 rounded-2xl bg-[#06C167] text-black flex items-center justify-center text-xl shadow-2xl shadow-[#06C167]/50 border-2 border-white transition-all transform';
+    el.innerHTML = '🛵';
+
+    driverMarker = new maplibregl.Marker({ element: el })
+      .setLngLat([currentCoordinates.lng, currentCoordinates.lat])
+      .setPopup(new maplibregl.Popup({ offset: 25 }).setHTML('<b class="text-slate-900">Tu Ubicación</b><br/><span class="text-xs text-slate-600">En Línea • Managua</span>'))
+      .addTo(map);
+
+    if (!map.getSource('driver-route')) {
+      map.addSource('driver-route', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: [] }
+        }
+      });
+
+      map.addLayer({
+        id: 'driver-route-line',
+        type: 'line',
+        source: 'driver-route',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': '#06C167',
+          'line-width': 6,
+          'line-dasharray': [2, 1]
+        }
+      });
+    }
+  }
+
+  // 4. SELECTOR DE VISTA: SMARTPHONE VS COCKPIT
+  window.switchViewMode = function (mode) {
+    currentViewMode = mode;
+    const cockpitEl = document.getElementById('cockpitContainer');
+    const phoneEl = document.getElementById('phoneViewContainer');
+    const btnCockpit = document.getElementById('viewModeCockpitBtn');
+    const btnPhone = document.getElementById('viewModePhoneBtn');
+
+    if (mode === 'phone') {
+      cockpitEl.classList.add('hidden');
+      phoneEl.classList.remove('hidden');
+      phoneEl.classList.add('flex');
+
+      btnCockpit.className = 'px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 text-[#8A94A6] hover:text-white';
+      btnPhone.className = 'px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 bg-[#06C167] text-black shadow-md';
+
+      initPhoneMapIfNeeded();
+    } else {
+      phoneEl.classList.add('hidden');
+      phoneEl.classList.remove('flex');
+      cockpitEl.classList.remove('hidden');
+
+      btnPhone.className = 'px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 text-[#8A94A6] hover:text-white';
+      btnCockpit.className = 'px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 bg-[#06C167] text-black shadow-md';
+
+      if (driverMap) driverMap.resize();
+    }
+  };
+
+  function initPhoneMapIfNeeded() {
+    const container = document.getElementById('phoneDriverMap');
+    if (!container || phoneMap || typeof maplibregl === 'undefined') {
+      if (phoneMap) phoneMap.resize();
+      return;
+    }
+
+    phoneMap = new maplibregl.Map({
+      container: 'phoneDriverMap',
+      style: 'https://tiles.openfreemap.org/styles/bright',
+      center: [currentCoordinates.lng, currentCoordinates.lat],
+      zoom: 14.5
+    });
+
+    phoneMap.on('load', () => {
+      const el = document.createElement('div');
+      el.className = 'w-10 h-10 rounded-2xl bg-[#06C167] text-black flex items-center justify-center text-lg shadow-2xl border-2 border-white';
+      el.innerHTML = '🛵';
+
+      phoneDriverMarker = new maplibregl.Marker({ element: el })
+        .setLngLat([currentCoordinates.lng, currentCoordinates.lat])
+        .addTo(phoneMap);
+
+      if (activeOrder) drawOrderOnPhoneMap();
+    });
+  }
+
+  // Controles de capa de mapa
+  window.setMapStyle = function (style) {
+    if (!driverMap) return;
+    const url = style === 'dark'
+      ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+      : 'https://tiles.openfreemap.org/styles/bright';
+    driverMap.setStyle(url);
+    driverMap.once('style.load', () => {
+      setupMapLayersAndMarkers(driverMap);
+      if (activeOrder) drawOrderOnMap();
+    });
+  };
+
+  window.centerMapOnDriver = function () {
+    const targetMap = currentViewMode === 'phone' ? phoneMap : driverMap;
+    if (targetMap) {
+      targetMap.flyTo({
+        center: [currentCoordinates.lng, currentCoordinates.lat],
+        zoom: 15,
+        essential: true
+      });
+    }
+  };
+
+  // 5. CARGAR PERFIL DEL REPARTIDOR
+  async function loadDriverProfile() {
+    try {
+      const resp = await fetch(`/api/driver/profile?driverId=${encodeURIComponent(currentDriverId)}`);
+      const data = await resp.json();
+
+      if (data.success && data.driver) {
+        driverProfile = data.driver;
+        isOnline = driverProfile.current_status === 'AVAILABLE' || driverProfile.current_status === 'BUSY';
+
+        // Actualizar UI de cabecera
+        const nameEl = document.getElementById('driverNameHeader');
+        if (nameEl) nameEl.innerText = driverProfile.full_name;
+
+        const vehicleEl = document.getElementById('driverVehicleHeader');
+        if (vehicleEl) vehicleEl.innerText = formatVehicleLabel(driverProfile.vehicle_type);
+
+        const plateEl = document.getElementById('driverPlateHeader');
+        if (plateEl) plateEl.innerText = driverProfile.license_plate || 'A482XYZ';
+
+        const batEl = document.getElementById('batteryLevelText');
+        if (batEl) batEl.innerText = `${driverProfile.battery_level || 95}%`;
+
+        if (driverProfile.location && typeof driverProfile.location.lng === 'number') {
+          currentCoordinates = driverProfile.location;
+          updateGpsTelemetryGauges(currentCoordinates.lat, currentCoordinates.lng, 0);
+          if (driverMarker) driverMarker.setLngLat([currentCoordinates.lng, currentCoordinates.lat]);
+          if (driverMap) driverMap.setCenter([currentCoordinates.lng, currentCoordinates.lat]);
+        }
+
+        updateOnlineUi();
+      }
+    } catch (err) {
+      console.warn('[Driver Web] Error cargando perfil:', err);
+    }
+  }
+
+  // Cargar Historial de Entregas y Ganancias Acumuladas
+  async function loadDriverHistoryAndEarnings() {
+    if (!currentDriverId) return;
+    try {
+      const resp = await fetch(`/api/driver/history?driverId=${encodeURIComponent(currentDriverId)}`);
+      const data = await resp.json();
+
+      if (data.success) {
+        const earnVal = Number(data.totalEarned || 0).toFixed(2);
+        const tripsCount = Number(data.deliveredCount || 0);
+
+        const todayEarnEl = document.getElementById('todayEarningsText');
+        const phoneEarnEl = document.getElementById('phoneEarningsText');
+        const tripsEl = document.getElementById('todayTripsCount');
+
+        if (todayEarnEl) todayEarnEl.innerText = `C$ ${earnVal} NIO`;
+        if (phoneEarnEl) phoneEarnEl.innerText = `C$ ${earnVal} NIO`;
+        if (tripsEl) tripsEl.innerText = `${tripsCount} Entregas`;
+
+        const histList = document.getElementById('driverHistoryList');
+        if (histList) {
+          if (!data.history || data.history.length === 0) {
+            histList.innerHTML = '<p class="text-xs text-[#8A94A6] italic py-2">No hay entregas registradas en este turno.</p>';
+          } else {
+            histList.innerHTML = data.history.map(item => `
+              <div class="p-2 rounded-xl bg-[#0D0F14] border border-[#222834] flex items-center justify-between">
+                <div class="truncate">
+                  <p class="font-bold text-white text-[11px] truncate">${item.restaurant || 'Restaurante'}</p>
+                  <p class="text-[10px] text-[#8A94A6] truncate">📍 ${item.address || 'Managua'}</p>
+                  <p class="text-[9px] text-[#556]">${item.delivered_at ? new Date(item.delivered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Hoy'}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="text-xs font-mono font-bold text-[#06C167]">+C$ ${Number(item.payout || 0).toFixed(2)}</span>
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Driver Web] Error cargando historial y ganancias:', err);
+    }
+  }
+
+  // Toggle estado Online / Offline
+  window.toggleDriverOnline = async function () {
+    isOnline = !isOnline;
+    const newStatus = isOnline ? 'AVAILABLE' : 'OFFLINE';
+
+    try {
+      await fetch('/api/driver/toggle-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driverId: currentDriverId, status: newStatus })
+      });
+    } catch (e) {}
+
+    updateOnlineUi();
+  };
+
+  function updateOnlineUi() {
+    const btn = document.getElementById('toggleOnlineBtn');
+    const dot = document.getElementById('onlineDot');
+    const text = document.getElementById('onlineText');
+    const offlineNotice = document.getElementById('offlineNoticeBanner');
+    const phoneOnlineBtn = document.getElementById('phoneOnlineBtn');
+
+    if (isOnline) {
+      if (btn) btn.className = 'px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-black transition-all flex items-center gap-2 border shadow-lg bg-[#06C167] text-black border-[#06C167] hover:bg-[#05A357]';
+      if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-black animate-pulse';
+      if (text) text.innerText = 'CONECTADO';
+      if (offlineNotice) offlineNotice.classList.add('hidden');
+      if (phoneOnlineBtn) {
+        phoneOnlineBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-black bg-[#06C167] text-black';
+        phoneOnlineBtn.innerText = 'EN LÍNEA';
+      }
+    } else {
+      if (btn) btn.className = 'px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-black transition-all flex items-center gap-2 border shadow-lg bg-[#2E3542] text-[#8A94A6] border-[#3B4556] hover:bg-[#343D4D]';
+      if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500';
+      if (text) text.innerText = 'DESCONECTADO';
+      if (offlineNotice) offlineNotice.classList.remove('hidden');
+      if (phoneOnlineBtn) {
+        phoneOnlineBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-black bg-[#2E3542] text-[#8A94A6]';
+        phoneOnlineBtn.innerText = 'DESCONECTADO';
+      }
+    }
+  }
+
+  // 6. CONSULTAR PEDIDOS ACTIVOS Y EN ESPERA
+  async function checkActiveOrders() {
+    try {
+      const resp = await fetch(`/api/driver/orders?driverId=${encodeURIComponent(currentDriverId)}`);
+      const data = await resp.json();
+
+      if (!data.success) return;
+
+      if (data.activeOrder) {
+        activeOrder = data.activeOrder;
+        renderActiveOrderView();
+      } else {
+        activeOrder = null;
+        renderIdleView(data.readyOrders || []);
+      }
+    } catch (err) {
+      console.warn('[Driver Web] Error al verificar pedidos:', err);
+    }
+  }
+
+  // 7. RENDERIZADO DEL PEDIDO ACTIVO EN CURSO
+  function renderActiveOrderView() {
+    const activeCard = document.getElementById('activeOrderCard');
+    const idleSec = document.getElementById('idleStateSection');
+    if (!activeCard || !idleSec) return;
+
+    activeCard.classList.remove('hidden');
+    idleSec.classList.add('hidden');
+
+    const orderIdEl = document.getElementById('activeOrderIdText');
+    if (orderIdEl) orderIdEl.innerText = `#${activeOrder.id.slice(0, 8).toUpperCase()}`;
+
+    const restNameEl = document.getElementById('activeRestName');
+    if (restNameEl) restNameEl.innerText = activeOrder.restaurants?.name || 'Pupusería & Antojitos El Diamante';
+
+    const restAddrEl = document.getElementById('activeRestAddress');
+    if (restAddrEl) restAddrEl.innerText = activeOrder.restaurants?.address || 'Colonial Los Robles, Managua';
+
+    const clientNameEl = document.getElementById('activeClientName');
+    if (clientNameEl) clientNameEl.innerText = activeOrder.client_name || 'Cliente';
+
+    const clientAddrEl = document.getElementById('activeClientAddress');
+    if (clientAddrEl) clientAddrEl.innerText = activeOrder.delivery_address || 'Galerías Santo Domingo, Managua';
+
+    // Determinar fase
+    if (activeOrder.status === 'DRIVER_ASSIGNED') {
+      if (currentStep === 'IN_KITCHEN') {
+        setupStepInKitchen();
+      } else {
+        setupStepToRestaurant();
+      }
+    } else if (activeOrder.status === 'PICKED_UP') {
+      if (currentStep === 'DELIVERING') {
+        setupStepAtClient();
+      } else {
+        setupStepToClient();
+      }
+    }
+
+    // Dibujar en el mapa
+    drawOrderOnMap();
+    if (phoneMap) drawOrderOnPhoneMap();
+
+    // Actualizar snippet de smartphone
+    updatePhoneTripSnippet();
+
+    // Conectar canal de telemetría de esta orden
+    connectOrderTrackingChannel(activeOrder.id);
+  }
+
+  function updatePhoneTripSnippet() {
+    const title = document.getElementById('phoneTripTitle');
+    const fare = document.getElementById('phoneTripFare');
+    const sub = document.getElementById('phoneTripSubtitle');
+    if (!title || !activeOrder) return;
+
+    const payout = (Number(activeOrder.delivery_fee) || 70) * 0.80;
+    fare.innerText = `C$ ${Math.round(payout)}.00`;
+
+    if (currentStep === 'TO_REST') {
+      title.innerText = '1. Hacia el Restaurante';
+      sub.innerText = activeOrder.restaurants?.name || 'Local de Comida';
+    } else if (currentStep === 'IN_KITCHEN') {
+      title.innerText = '2. En Cocina / Retirar';
+      sub.innerText = 'Verificar comanda de productos';
+    } else if (currentStep === 'TO_CLIENT') {
+      title.innerText = '3. En Camino al Cliente';
+      sub.innerText = activeOrder.delivery_address || 'Entrega en Managua';
+    } else if (currentStep === 'DELIVERING') {
+      title.innerText = '4. Cobrar y Entregar';
+      sub.innerText = `Cobro: C$ ${activeOrder.total || 485.00}`;
+    }
+  }
+
+  function setupStepToRestaurant() {
+    currentStep = 'TO_REST';
+    document.getElementById('activeStepTitle').innerText = '1. Dirígete al Restaurante';
+    document.getElementById('activeStepSubtitle').innerText = 'Conduce al local para retirar los productos.';
+    document.getElementById('stepActionBtnText').innerText = 'LLEGUÉ AL LOCAL';
+    document.getElementById('itemsChecklistContainer').classList.add('hidden');
+    document.getElementById('cashCollectionNotice').classList.add('hidden');
+  }
+
+  function setupStepInKitchen() {
+    currentStep = 'IN_KITCHEN';
+    document.getElementById('activeStepTitle').innerText = '2. Verificación de Comanda';
+    document.getElementById('activeStepSubtitle').innerText = 'Revisa que la cocina haya empacado todos los ítems.';
+    document.getElementById('stepActionBtnText').innerText = 'CONFIRMAR Y RECOGER PEDIDO';
+    
+    const container = document.getElementById('itemsChecklistContainer');
+    const list = document.getElementById('itemsChecklist');
+    container.classList.remove('hidden');
+    document.getElementById('cashCollectionNotice').classList.add('hidden');
+
+    list.innerHTML = '';
+    const items = activeOrder.order_items || [];
+    if (items.length > 0) {
+      items.forEach((item) => {
+        const prod = item.products || {};
+        list.innerHTML += `
+          <label class="flex items-center gap-2.5 p-2 rounded-lg bg-[#14171F] border border-[#222938] cursor-pointer hover:border-[#06C167]">
+            <input type="checkbox" checked class="w-4 h-4 rounded text-[#06C167] focus:ring-0 bg-[#0C0E12] border-[#333]" />
+            <span class="font-bold text-white">${item.quantity}x ${prod.name || 'Producto del Menú'}</span>
+          </label>
+        `;
+      });
+    } else {
+      list.innerHTML = `
+        <label class="flex items-center gap-2.5 p-2 rounded-lg bg-[#14171F] border border-[#222938]">
+          <input type="checkbox" checked class="w-4 h-4 rounded text-[#06C167]" />
+          <span class="font-bold text-white">2x Super Combo 4 Pupusas + Bebida Típica</span>
+        </label>
+      `;
+    }
+  }
+
+  function setupStepToClient() {
+    currentStep = 'TO_CLIENT';
+    document.getElementById('activeStepTitle').innerText = '3. En Camino al Cliente';
+    document.getElementById('activeStepSubtitle').innerText = 'Conduce al domicilio de entrega y mantén el GPS activo.';
+    document.getElementById('stepActionBtnText').innerText = 'LLEGUÉ AL DOMICILIO';
+    document.getElementById('itemsChecklistContainer').classList.add('hidden');
+
+    const cashNotice = document.getElementById('cashCollectionNotice');
+    cashNotice.classList.remove('hidden');
+    document.getElementById('cashAmountToCollect').innerText = `C$ ${activeOrder.total || 485.00}`;
+  }
+
+  function setupStepAtClient() {
+    currentStep = 'DELIVERING';
+    document.getElementById('activeStepTitle').innerText = '4. Entregar al Cliente';
+    document.getElementById('activeStepSubtitle').innerText = 'Cobra el monto indicado y entrega el paquete.';
+    document.getElementById('stepActionBtnText').innerText = 'CONFIRMAR ENTREGA REALIZADA';
+    document.getElementById('cashCollectionNotice').classList.remove('hidden');
+  }
+
+  // AVANCE DE PASO DINÁMICO
+  window.handleStepAdvance = async function () {
+    if (!activeOrder) return;
+
+    if (currentStep === 'TO_REST') {
+      setupStepInKitchen();
+      updatePhoneTripSnippet();
+    } else if (currentStep === 'IN_KITCHEN') {
+      try {
+        await fetch('/api/driver/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: activeOrder.id,
+            status: 'PICKED_UP',
+            driverId: currentDriverId
+          })
+        });
+        activeOrder.status = 'PICKED_UP';
+        setupStepToClient();
+        updatePhoneTripSnippet();
+      } catch (e) {}
+    } else if (currentStep === 'TO_CLIENT') {
+      setupStepAtClient();
+      updatePhoneTripSnippet();
+    } else if (currentStep === 'DELIVERING') {
+      try {
+        await fetch('/api/driver/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: activeOrder.id,
+            status: 'DELIVERED',
+            driverId: currentDriverId
+          })
+        });
+
+        if (gpsSimInterval) clearInterval(gpsSimInterval);
+
+        const payout = (Number(activeOrder.delivery_fee) || 70) * 0.80;
+        document.getElementById('successPayoutEarned').innerText = `+C$ ${Math.round(payout)}.00`;
+        document.getElementById('deliveredSuccessModal').classList.remove('hidden');
+
+        playAudioChime(660, 0.2);
+        setTimeout(() => playAudioChime(880, 0.4), 220);
+
+        activeOrder = null;
+        currentStep = 'NONE';
+        await loadDriverHistoryAndEarnings();
+      } catch (e) {}
+    }
+  };
+
+  // 8. RENDERIZADO DEL ESTADO INACTIVO (IDLE) / OPORTUNIDADES EN ZONA
+  function renderIdleView(readyOrders) {
+    const activeCard = document.getElementById('activeOrderCard');
+    const idleSec = document.getElementById('idleStateSection');
+    if (!activeCard || !idleSec) return;
+
+    activeCard.classList.add('hidden');
+    idleSec.classList.remove('hidden');
+
+    const countEl = document.getElementById('availableOrdersCount');
+    const listEl = document.getElementById('readyOrdersList');
+    const radarBox = document.getElementById('searchingRadarBox');
+
+    const phoneCont = document.getElementById('phoneAvailableOrdersContainer');
+    const phoneList = document.getElementById('phoneAvailableOrdersList');
+    const phoneBadge = document.getElementById('phoneAvailableCountBadge');
+    const phoneSub = document.getElementById('phoneTripSubtitle');
+
+    if (countEl) countEl.innerText = `${readyOrders.length} disponibles`;
+
+    if (readyOrders.length > 0) {
+      if (radarBox) radarBox.classList.add('hidden');
+      if (listEl) {
+        listEl.innerHTML = '';
+        readyOrders.forEach(o => {
+          const payout = o.driver_payout || 56;
+          const restName = o.restaurants?.name || 'Pupusería & Antojitos El Diamante';
+          const itemsCount = (o.order_items && o.order_items.length) || 2;
+          const distKm = calculateDistanceKm(currentCoordinates, o.restaurant_location);
+
+          listEl.innerHTML += `
+            <div class="p-3.5 bg-[#151922] border-2 border-[#222834] hover:border-[#06C167] rounded-2xl transition-all space-y-2.5 shadow-lg">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-black text-white block">${restName}</span>
+                  <span class="text-[10px] text-[#8A94A6]">${itemsCount} ítems • Listo para retiro</span>
+                </div>
+                <div class="text-right">
+                  <span class="font-mono font-black text-base text-[#06C167] block">C$ ${Number(payout).toFixed(2)}</span>
+                  <span class="text-[9px] text-[#8A94A6] font-bold uppercase">Pago neto</span>
+                </div>
+              </div>
+              <div class="text-[11px] text-[#8A94A6] flex items-center justify-between pt-1 border-t border-[#222834]">
+                <span class="truncate">📍 ${o.delivery_address || 'Galerías Santo Domingo, Managua'}</span>
+                <span class="text-white font-medium shrink-0 font-mono ml-2">~${distKm} km</span>
+              </div>
+              <button onclick="claimZoneOrder('${o.id}')" class="w-full py-2.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs shadow-lg shadow-[#06C167]/25 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
+                <span>⚡</span> Tomar Pedido Ahora
+              </button>
+            </div>
+          `;
+        });
+      }
+
+      if (phoneCont && phoneList) {
+        phoneCont.classList.remove('hidden');
+        if (phoneBadge) phoneBadge.innerText = readyOrders.length;
+        if (phoneSub) phoneSub.innerText = `${readyOrders.length} pedido(s) disponibles en Managua`;
+        phoneList.innerHTML = '';
+        readyOrders.forEach(o => {
+          const payout = o.driver_payout || 56;
+          const distKm = calculateDistanceKm(currentCoordinates, o.restaurant_location);
+          phoneList.innerHTML += `
+            <div class="p-2.5 rounded-xl bg-[#0D0F14] border border-[#222834] flex items-center justify-between gap-2">
+              <div class="truncate text-left">
+                <p class="font-bold text-white text-[11px] truncate">${o.restaurants?.name || 'Restaurante'}</p>
+                <p class="text-[10px] text-[#8A94A6] truncate">📍 ${o.delivery_address || 'Managua'} • ~${distKm} km</p>
+              </div>
+              <button onclick="claimZoneOrder('${o.id}')" class="px-3 py-1.5 rounded-lg bg-[#06C167] text-black font-black text-[11px] shrink-0">
+                ⚡ Tomar C$ ${Math.round(payout)}
+              </button>
+            </div>
+          `;
+        });
+      }
+    } else {
+      if (radarBox) radarBox.classList.remove('hidden');
+      if (listEl) listEl.innerHTML = '';
+      if (phoneCont) phoneCont.classList.add('hidden');
+      if (phoneSub) phoneSub.innerText = 'Esperando ofertas en Managua Centro';
+    }
+
+    // Limpiar marcadores secundarios
+    if (restaurantMarker) restaurantMarker.remove();
+    if (deliveryMarker) deliveryMarker.remove();
+    if (driverMap && driverMap.getSource('driver-route')) {
+      driverMap.getSource('driver-route').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } });
+    }
+  }
+
+  // 9. MANEJO DE OFERTA DE ALTA PRIORIDAD (20s COUNTDOWN)
+  function handleIncomingOffer(offer) {
+    if (!isOnline || activeOrder) return;
+
+    currentOfferPayload = offer;
+    const modal = document.getElementById('incomingOfferModal');
+    if (modal) modal.classList.remove('hidden');
+
+    playOfferAlertChime();
+
+    const payout = offer.payout_amount || 56.00;
+    const payoutEl = document.getElementById('offerPayoutText');
+    const acceptBtnEl = document.getElementById('acceptBtnAmount');
+    if (payoutEl) payoutEl.innerText = `C$ ${Number(payout).toFixed(2)}`;
+    if (acceptBtnEl) acceptBtnEl.innerText = `(C$ ${Number(payout).toFixed(2)})`;
+
+    const distEl = document.getElementById('offerDistanceText');
+    const restNameEl = document.getElementById('offerRestName');
+    const restAddrEl = document.getElementById('offerRestAddress');
+    const clientAddrEl = document.getElementById('offerClientAddress');
+    const itemsEl = document.getElementById('offerItemsSummary');
+
+    if (distEl) distEl.innerText = (offer.distance_km || '2.4') + ' km';
+    if (restNameEl) restNameEl.innerText = offer.restaurant_name || offer.restaurants?.name || 'Restaurante Asociado';
+    if (restAddrEl) restAddrEl.innerText = offer.restaurant_address || offer.restaurants?.address || 'Managua, Nicaragua';
+    if (clientAddrEl) clientAddrEl.innerText = offer.delivery_address || 'Managua, Nicaragua';
+    if (itemsEl) itemsEl.innerText = (offer.items_count || 2) + ' ítems • Listo para retiro';
+
+    offerSecondsLeft = offer.expires_in_seconds || 20;
+    const secondsText = document.getElementById('timerSecondsText');
+    const circle = document.getElementById('timerCircle');
+    const totalLength = 125.6;
+
+    if (offerCountdownTimer) clearInterval(offerCountdownTimer);
+
+    offerCountdownTimer = setInterval(() => {
+      offerSecondsLeft--;
+      if (secondsText) secondsText.innerText = offerSecondsLeft;
+
+      if (circle) {
+        const offset = totalLength - (offerSecondsLeft / 20) * totalLength;
+        circle.style.strokeDashoffset = offset;
+      }
+
+      if (offerSecondsLeft <= 0) {
+        clearInterval(offerCountdownTimer);
+        rejectIncomingOffer();
+      }
+    }, 1000);
+  }
+
+  window.acceptIncomingOffer = async function () {
+    if (offerCountdownTimer) clearInterval(offerCountdownTimer);
+    const modal = document.getElementById('incomingOfferModal');
+    if (modal) modal.classList.add('hidden');
+
+    if (!currentOfferPayload) return;
+
+    if (dispatchChannel) {
+      await dispatchChannel.send({
+        type: 'broadcast',
+        event: 'offer_response',
+        payload: {
+          order_id: currentOfferPayload.order_id,
+          accepted: true
+        }
+      });
+    }
+
+    try {
+      const res = await fetch('/api/driver/accept-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: currentOfferPayload.order_id,
+          driverId: currentDriverId
+        })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.error || 'El pedido ya fue tomado.');
+      }
+    } catch (e) {
+      console.error('Error accepting offer:', e);
+    }
+
+    currentOfferPayload = null;
+    await checkActiveOrders();
+  };
+
+  window.rejectIncomingOffer = async function () {
+    if (offerCountdownTimer) clearInterval(offerCountdownTimer);
+    const modal = document.getElementById('incomingOfferModal');
+    if (modal) modal.classList.add('hidden');
+
+    if (currentOfferPayload && dispatchChannel) {
+      await dispatchChannel.send({
+        type: 'broadcast',
+        event: 'offer_response',
+        payload: {
+          order_id: currentOfferPayload.order_id,
+          accepted: false
+        }
+      });
+    }
+    currentOfferPayload = null;
+  };
+
+  window.simulateOrderOffer = function (orderId) {
+    handleIncomingOffer({
+      order_id: orderId,
+      payout_amount: 56.00,
+      expires_in_seconds: 20
+    });
+  };
+
+  // 10. DIBUJAR RUTA Y MARCADORES EN EL MAPA CON SEGURIDAD
+  function drawOrderOnMap() {
+    if (!driverMap || !driverMap.loaded() || !activeOrder) return;
+
+    // Coordenadas válidas en Managua
+    const restCoords = (activeOrder.restaurant_location && typeof activeOrder.restaurant_location.lng === 'number')
+      ? activeOrder.restaurant_location
+      : { lng: -86.2650, lat: 12.1260 };
+
+    const delivCoords = (activeOrder.delivery_coords && typeof activeOrder.delivery_coords.lng === 'number')
+      ? activeOrder.delivery_coords
+      : { lng: -86.2480, lat: 12.1060 };
+
+    // Marcador Restaurante
+    if (!restaurantMarker) {
+      const restEl = document.createElement('div');
+      restEl.className = 'w-9 h-9 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center text-lg shadow-xl border-2 border-slate-900';
+      restEl.innerHTML = '🏪';
+      restaurantMarker = new maplibregl.Marker(restEl).addTo(driverMap);
+    }
+    restaurantMarker.setLngLat([restCoords.lng, restCoords.lat]);
+
+    // Marcador Cliente
+    if (!deliveryMarker) {
+      const destEl = document.createElement('div');
+      destEl.className = 'w-9 h-9 rounded-2xl bg-[#06C167] text-black flex items-center justify-center text-lg shadow-xl border-2 border-slate-900';
+      destEl.innerHTML = '📍';
+      deliveryMarker = new maplibregl.Marker(destEl).addTo(driverMap);
+    }
+    deliveryMarker.setLngLat([delivCoords.lng, delivCoords.lat]);
+
+    // Línea de Ruta
+    const lineCoords = [
+      [currentCoordinates.lng, currentCoordinates.lat],
+      [restCoords.lng, restCoords.lat],
+      [delivCoords.lng, delivCoords.lat]
+    ];
+
+    if (driverMap.getSource('driver-route')) {
+      driverMap.getSource('driver-route').setData({
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'LineString', coordinates: lineCoords }
+      });
+    }
+
+    try {
+      const bounds = new maplibregl.LngLatBounds();
+      bounds.extend([currentCoordinates.lng, currentCoordinates.lat]);
+      bounds.extend([restCoords.lng, restCoords.lat]);
+      bounds.extend([delivCoords.lng, delivCoords.lat]);
+      driverMap.fitBounds(bounds, { padding: 80, maxZoom: 16 });
+    } catch (e) {}
+  }
+
+  function drawOrderOnPhoneMap() {
+    if (!phoneMap || !phoneMap.loaded() || !activeOrder) return;
+    const restCoords = activeOrder.restaurant_location || { lng: -86.2650, lat: 12.1260 };
+    phoneMap.flyTo({ center: [restCoords.lng, restCoords.lat], zoom: 14 });
+  }
+
+  // 11. CANAL DE TELEMETRÍA WEBSOCKET Y SIMULADOR GPS
+  function connectOrderTrackingChannel(orderId) {
+    if (!supabase) return;
+    if (orderTrackingChannel) orderTrackingChannel.unsubscribe();
+
+    orderTrackingChannel = supabase.channel(`orders:${orderId}:tracking`, {
+      config: { broadcast: { self: true } }
+    });
+    orderTrackingChannel.subscribe();
+  }
+
+  // Alternar Simulación GPS en vivo
+  window.toggleGpsSimulation = function () {
+    const statusEl = document.getElementById('gpsSimStatus');
+    const btnText = document.getElementById('simGpsBtnText');
+
+    if (gpsSimInterval) {
+      clearInterval(gpsSimInterval);
+      gpsSimInterval = null;
+      if (statusEl) statusEl.innerText = 'Pausado';
+      if (btnText) btnText.innerText = 'Reanudar Simulación GPS';
+      updateGpsTelemetryGauges(currentCoordinates.lat, currentCoordinates.lng, 0);
+      return;
+    }
+
+    if (!activeOrder) {
+      alert('Debes tener un pedido en curso para simular el trayecto.');
+      return;
+    }
+
+    const targetCoords = currentStep === 'TO_REST' 
+      ? (activeOrder.restaurant_location || { lng: -86.2650, lat: 12.1260 })
+      : (activeOrder.delivery_coords || { lng: -86.2480, lat: 12.1060 });
+
+    const startLng = currentCoordinates.lng;
+    const startLat = currentCoordinates.lat;
+    gpsSimProgress = 0;
+
+    if (statusEl) statusEl.innerText = '🔴 Transmitiendo GPS...';
+    if (btnText) btnText.innerText = 'Pausar Simulación';
+
+    gpsSimInterval = setInterval(async () => {
+      gpsSimProgress += 0.05;
+      if (gpsSimProgress > 1.0) {
+        clearInterval(gpsSimInterval);
+        gpsSimInterval = null;
+        if (statusEl) statusEl.innerText = 'Llegó al destino';
+        if (btnText) btnText.innerText = 'Simulación Completada';
+        updateGpsTelemetryGauges(currentCoordinates.lat, currentCoordinates.lng, 0);
+        return;
+      }
+
+      const nextLng = startLng + (targetCoords.lng - startLng) * gpsSimProgress;
+      const nextLat = startLat + (targetCoords.lat - startLat) * gpsSimProgress;
+      currentCoordinates = { lng: nextLng, lat: nextLat };
+
+      // Actualizar velocímetro e instrumentos (velocidad aleatoria entre 24 y 35 km/h)
+      const currentSpeed = Math.floor(25 + Math.random() * 10);
+      updateGpsTelemetryGauges(nextLat, nextLng, currentSpeed);
+
+      // 1. Mover marcador local en MapLibre
+      if (driverMarker) driverMarker.setLngLat([nextLng, nextLat]);
+      if (phoneDriverMarker) phoneDriverMarker.setLngLat([nextLng, nextLat]);
+
+      // 2. Transmitir por WebSockets Supabase Realtime para que el Cliente lo vea en /client/tracking
+      if (orderTrackingChannel && activeOrder) {
+        orderTrackingChannel.send({
+          type: 'broadcast',
+          event: 'driver_location',
+          payload: {
+            latitude: nextLat,
+            longitude: nextLng,
+            bearing: 45,
+            speed: currentSpeed,
+            timestamp: Date.now()
+          }
+        }).catch(() => {});
+      }
+
+      // 2b. Transmitir a la Torre de Control de Flota (/admin/control-tower) en tiempo real
+      if (supabase) {
+        supabase.channel('admin-telemetry-broadcast').send({
+          type: 'broadcast',
+          event: 'driver_location',
+          payload: {
+            driver_id: currentDriverId,
+            latitude: nextLat,
+            longitude: nextLng,
+            speed: `${currentSpeed} km/h`,
+            timestamp: Date.now()
+          }
+        }).catch(() => {});
+      }
+
+      // 3. Actualizar base de datos PostGIS (driver_profiles) para Torre de Control
+      fetch('/api/driver/location', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId: currentDriverId,
+          latitude: nextLat,
+          longitude: nextLng,
+          bearing: 45,
+          speed: currentSpeed
+        })
+      }).catch(() => {});
+    }, 2000);
+  };
+
+  function updateGpsTelemetryGauges(lat, lng, speed) {
+    const speedVal = document.getElementById('cockpitSpeedVal');
+    const hudSpeed = document.getElementById('hudSpeedText');
+    const bar = document.getElementById('speedoProgressBar');
+    const latEl = document.getElementById('gaugeLatText');
+    const lngEl = document.getElementById('gaugeLngText');
+
+    if (speedVal) speedVal.innerText = speed;
+    if (hudSpeed) hudSpeed.innerText = speed;
+    if (bar) bar.style.width = `${Math.min(100, (speed / 60) * 100)}%`;
+    if (latEl) latEl.innerText = `${lat.toFixed(4)}° N`;
+    if (lngEl) lngEl.innerText = `${lng.toFixed(4)}° W`;
+  }
+
+  // 12. NAVEGACIÓN EXTERNA (WAZE / GOOGLE MAPS)
+  window.launchExternalNavigation = function () {
+    if (!activeOrder) return;
+    const dest = currentStep === 'TO_REST'
+      ? (activeOrder.restaurant_location || { lng: -86.2650, lat: 12.1260 })
+      : (activeOrder.delivery_coords || { lng: -86.2480, lat: 12.1060 });
+
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}`;
+    window.open(url, '_blank');
+  };
+
+  window.callContactPhone = function () {
+    const isClientPhase = (currentStep === 'TO_CLIENT' || currentStep === 'DELIVERING' || currentStep === 'DELIVERED');
+    const phone = isClientPhase
+      ? (activeOrder?.client_phone || '+505 8899-7711')
+      : (activeOrder?.restaurants?.phone || '+505 8899-7711');
+    window.open(`tel:${phone}`, '_self');
+  };
+
+  window.closeSuccessModal = function () {
+    document.getElementById('deliveredSuccessModal').classList.add('hidden');
+    checkActiveOrders();
+  };
+
+  // 13. SÍNTESIS DE AUDIO WEB (CHIMES & ALARMAS SIN ARCHIVOS EXTERNOS)
+  function playAudioChime(freq = 440, duration = 0.2) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  function playOfferAlertChime() {
+    playAudioChime(523.25, 0.15);
+    setTimeout(() => playAudioChime(659.25, 0.15), 160);
+    setTimeout(() => playAudioChime(783.99, 0.35), 320);
+  }
+
+  function startPollingOrders() {
+    if (ordersPollInterval) clearInterval(ordersPollInterval);
+    ordersPollInterval = setInterval(() => {
+      if (!pedidosnica_driver_session || !isOnline) return;
+      if (!activeOrder) checkActiveOrders();
+    }, 10000);
+  }
+
+})();
+
+</script>
+  
+  <script>
+    (function() {
+      // Catálogo de vectores monocromáticos uniformes (Estilo Lucide / Uber Eats)
+      const SVG_PATHS = {
+        pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+        home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+        building: '<rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>',
+        store: '<path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/>',
+        user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+        users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        cart: '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+        bag: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+        box: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+        receipt: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>',
+        phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+        smartphone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+        mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+        chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+        lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+        unlock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+        key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+        shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+        search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+        edit: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+        trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+        refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/>',
+        save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+        plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+        check: '<polyline points="20 6 9 17 4 12"/>',
+        star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+        grad: '<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>',
+        bike: '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+        car: '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+        zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+        cash: '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
+        card: '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+        target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+        globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+        logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+        bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+        print: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+        utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+        pause: '<circle cx="12" cy="12" r="10"/><line x1="10" x2="10" y1="15" y2="9"/><line x1="14" x2="14" y1="15" y2="9"/>',
+        alert: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+        dot: '<circle cx="12" cy="12" r="6"/>'
+      };
+
+      const EMOJI_TO_KEY = {
+        '📍': 'pin', '🗺️': 'pin',
+        '🎯': 'target',
+        '🌐': 'globe',
+        '🏠': 'home',
+        '🏢': 'building', '🏨': 'building', '💼': 'building',
+        '🏪': 'store',
+        '👤': 'user', '👨‍🍳': 'user',
+        '👥': 'users',
+        '👑': 'shield', '🛡️': 'shield',
+        '🛒': 'cart',
+        '🛍️': 'bag',
+        '📦': 'box',
+        '🧾': 'receipt', '📋': 'receipt', '📝': 'receipt', '📚': 'receipt',
+        '📞': 'phone',
+        '📲': 'smartphone', '📱': 'smartphone',
+        '📧': 'mail',
+        '💬': 'chat',
+        '🔐': 'lock', '🔒': 'lock',
+        '🔓': 'unlock',
+        '🔑': 'key',
+        '🔍': 'search',
+        '✏️': 'edit',
+        '🗑️': 'trash',
+        '🔄': 'refresh',
+        '💾': 'save',
+        '➕': 'plus',
+        '✓': 'check', '✅': 'check', '🎉': 'check',
+        '⭐': 'star', '★': 'star', '✨': 'star',
+        '❤️': 'heart',
+        '🎓': 'grad',
+        '🛵': 'bike', '🚲': 'bike', '🏋️': 'zap',
+        '🚗': 'car',
+        '⚡': 'zap', '🔋': 'zap',
+        '💵': 'cash',
+        '💳': 'card',
+        '🚪': 'logout',
+        '🔔': 'bell', '🛎️': 'bell',
+        '🖨️': 'print',
+        '🍔': 'utensils', '🍕': 'utensils', '🍽️': 'utensils',
+        '⏸️': 'pause',
+        '🚫': 'alert', '⚠️': 'alert', 'ℹ️': 'alert',
+        '🟢': 'dot', '🟡': 'dot', '🔴': 'dot', '🏷️': 'pin'
+      };
+
+      const EMOJI_KEYS = Object.keys(EMOJI_TO_KEY).sort((a, b) => b.length - a.length);
+      const EMOJI_REGEX = new RegExp('(' + EMOJI_KEYS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'g');
+
+      function makeSvgHtml(key) {
+        const path = SVG_PATHS[key] || SVG_PATHS.dot;
+        return '<svg class="pn-uni-icon" viewBox="0 0 24 24" aria-hidden="true">' + path + '</svg>';
+      }
+
+      function normalizeIconsInRoot(root) {
+        if (!root) return;
+
+        // 1. En <option> de <select>, reemplazar emojis multicolores por viñeta monocromática limpia
+        const options = root.querySelectorAll ? root.querySelectorAll('option') : [];
+        options.forEach(opt => {
+          if (opt.text && EMOJI_REGEX.test(opt.text)) {
+            opt.text = opt.text.replace(EMOJI_REGEX, '▸ ').replace(/\s+/g, ' ').trim();
+          }
+        });
+
+        // 2. Recorrer nodos de texto para reemplazar emojis por iconos SVG uniformes (#06C167)
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: function(node) {
+            const p = node.parentNode;
+            if (!p) return NodeFilter.FILTER_REJECT;
+            const tag = p.nodeName.toUpperCase();
+            if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA' || tag === 'OPTION' || tag === 'TITLE') {
+              return NodeFilter.FILTER_REJECT;
+            }
+            if (node.nodeValue && EMOJI_REGEX.test(node.nodeValue)) {
+              return NodeFilter.FILTER_ACCEPT;
+            }
+            return NodeFilter.FILTER_SKIP;
+          }
+        });
+
+        const textNodes = [];
+        let current;
+        while ((current = walker.nextNode())) {
+          textNodes.push(current);
+        }
+
+        textNodes.forEach(tNode => {
+          const val = tNode.nodeValue;
+          if (!val || !EMOJI_REGEX.test(val)) return;
+          const span = document.createElement('span');
+          span.className = 'inline-flex items-center gap-1';
+          span.innerHTML = val.replace(EMOJI_REGEX, function(match) {
+            const key = EMOJI_TO_KEY[match] || 'dot';
+            return makeSvgHtml(key);
+          });
+          if (tNode.parentNode) {
+            tNode.parentNode.replaceChild(span, tNode);
+          }
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        normalizeIconsInRoot(document.body);
+        const obs = new MutationObserver(function(mutations) {
+          mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(n) {
+              if (n.nodeType === 1) {
+                normalizeIconsInRoot(n);
+              } else if (n.nodeType === 3 && n.parentNode) {
+                normalizeIconsInRoot(n.parentNode);
+              }
+            });
+          });
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+      });
+    })();
+  </script>
+
+  <!-- BOTÓN FLOTANTE Y MODAL GLOBAL DE ACCESO MÓVIL (LAN + TÚNEL QR) -->
+  <button id="pnMobileAccessFab" onclick="window.openMobileAccessModal()" class="fixed bottom-4 left-4 z-40 px-3.5 py-2 rounded-2xl bg-[#121212]/95 hover:bg-[#1C1C1C] border border-[#06C167]/50 text-white shadow-2xl flex items-center gap-2 text-xs font-bold transition-all backdrop-blur-md">
+    <span>📲</span>
+    <span>Abrir en Teléfono / QR</span>
+  </button>
+
+  <div id="pnMobileAccessModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#121212] border-2 border-[#06C167]/40 rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto text-xs">
+      <div class="flex items-center justify-between pb-3 border-b border-[#262626]">
+        <div class="flex items-center gap-2.5">
+          <span class="p-2.5 rounded-2xl bg-[#06C167]/15 text-[#06C167] text-lg">📲</span>
+          <div>
+            <h3 class="text-base font-black text-white">Acceso desde tu Teléfono a Todas las Apps</h3>
+            <p class="text-[11px] text-[#A6A6A6]">Escanea el código QR con la cámara de tu teléfono o abre el enlace directo</p>
+          </div>
+        </div>
+        <button onclick="window.closeMobileAccessModal()" class="text-[#A6A6A6] hover:text-white text-base p-1.5">✕</button>
+      </div>
+
+      <!-- Explicación de por qué 'localhost' no abre en el teléfono -->
+      <div class="p-3.5 rounded-2xl bg-[#191919] border border-[#2E2E2E] space-y-1.5">
+        <p class="font-bold text-[#06C167] flex items-center gap-1.5">
+          <span>ℹ️</span> ¿Por qué <code class="bg-black px-1.5 py-0.5 rounded text-white font-mono">localhost:3000</code> no abre en el teléfono?
+        </p>
+        <p class="text-[11px] text-[#A6A6A6] leading-relaxed">
+          En cualquier teléfono, la palabra <code class="text-white font-mono">localhost</code> apunta al propio teléfono y no a tu computadora. Para entrar desde tu celular tienes <strong>2 opciones activas ahora mismo</strong>:
+        </p>
+      </div>
+
+      <!-- Selector de Modo de Conexión -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button id="btnModeLan" onclick="window.setMobileQrMode('lan')" class="p-3.5 rounded-2xl border-2 border-[#06C167] bg-[#06C167]/10 text-left transition-all">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-white text-xs flex items-center gap-1.5"><span>🌐</span> Opción 1: Red Wi-Fi Local (LAN)</span>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#06C167] text-black uppercase">Misma Red</span>
+          </div>
+          <p class="font-mono text-[#06C167] text-xs font-bold mt-1" id="lblLanBaseUrl">http://192.168.1.20:3000</p>
+          <p class="text-[10px] text-[#A6A6A6] mt-0.5">Conexión directa por tu Wi-Fi local sin consumir internet.</p>
+        </button>
+
+        <button id="btnModeTunnel" onclick="window.setMobileQrMode('tunnel')" class="p-3.5 rounded-2xl border-2 border-[#2E2E2E] bg-[#191919] text-left transition-all">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-white text-xs flex items-center gap-1.5"><span>⚡</span> Opción 2: Túnel HTTPS Universal</span>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#06C167]/20 text-[#06C167] border border-[#06C167]/40 uppercase">Anti-Bloqueo + GPS</span>
+          </div>
+          <p class="font-mono text-[#06C167] text-xs font-bold mt-1 truncate" id="lblTunnelBaseUrl">https://1de3b77b254e8b.lhr.life</p>
+          <p class="text-[10px] text-[#A6A6A6] mt-0.5">Úsalo si tu router Wi-Fi aísla dispositivos (AP Isolation) o si usas Datos 4G.</p>
+        </button>
+      </div>
+
+      <!-- Cuadrícula de las 4 Apps con QR y Descarga de APK -->
+      <div id="mobileAppsQrGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1"></div>
+
+      <!-- Sección de Auto-Actualización y Publicación en GitHub Releases -->
+      <div class="p-4 rounded-2xl bg-[#181C24] border border-[#06C167]/30 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="text-xs font-black text-white flex items-center gap-1.5">
+              <span>🔄</span>
+              <span>Motor de Auto-Actualización & GitHub Releases</span>
+              <span id="lblCurrentAppVersion" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-[#06C167] text-black">v1.1.0</span>
+            </div>
+            <p class="text-[11px] text-[#A6A6A6] mt-0.5">
+              Repositorio conectado: <a href="https://github.com/darthriuk/PedidosNica/releases" target="_blank" class="text-[#06C167] font-mono underline">github.com/darthriuk/PedidosNica</a>
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="window.checkGitHubReleaseUpdate(true)" class="px-3 py-1.5 rounded-xl bg-[#242C3A] hover:bg-[#2E384A] text-white font-bold text-[11px] border border-[#3A465E] transition-colors flex items-center gap-1">
+              <span>🔍</span> Buscar Actualización
+            </button>
+            <a href="https://github.com/darthriuk/PedidosNica/releases/latest" target="_blank" class="px-3 py-1.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-[11px] transition-colors">
+              Ver Releases ↗
+            </a>
+          </div>
+        </div>
+        <div id="githubReleaseStatusBox" class="text-[11px] text-[#A6A6A6] font-mono bg-black/50 p-2.5 rounded-xl border border-[#262626]">
+          Verificando estado de compilación y última versión en GitHub...
+        </div>
+
+        <!-- Publicador de Nueva Versión en 1 Clic -->
+        <div class="pt-2 border-t border-[#262E3D] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input type="text" id="inpNewReleaseVersion" placeholder="Nueva versión (ej: 1.0.1)" class="bg-black border border-[#2E384A] focus:border-[#06C167] rounded-xl px-3 py-1.5 text-xs text-white font-mono outline-none sm:w-44" />
+          <input type="text" id="inpNewReleaseNotes" placeholder="Notas del cambio (ej: Mejoras en catálogo y despacho)" class="bg-black border border-[#2E384A] focus:border-[#06C167] rounded-xl px-3 py-1.5 text-xs text-white outline-none flex-1" />
+          <button id="btnPublishGitHubUpdate" onclick="window.publishNewGitHubUpdate()" class="px-3.5 py-1.5 rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs transition-all shrink-0">
+            🚀 Subir y Compilar Release
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANNER SUPERIOR DE AUTO-ACTUALIZACIÓN EN TIEMPO REAL -->
+  <div id="pnAutoUpdateBanner" class="hidden fixed top-3 inset-x-4 max-w-xl mx-auto z-50 p-3.5 rounded-2xl bg-[#12161F]/95 border-2 border-[#06C167] shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 text-xs">
+    <div class="flex items-center gap-2.5">
+      <span class="p-2 rounded-xl bg-[#06C167]/20 text-[#06C167] text-base">🚀</span>
+      <div>
+        <p class="font-black text-white" id="pnUpdateBannerTitle">¡Nueva versión disponible!</p>
+        <p class="text-[11px] text-[#A6A6A6] line-clamp-1" id="pnUpdateBannerDesc">Se ha detectado una nueva actualización en GitHub Releases.</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <a id="pnUpdateBannerApkBtn" href="https://github.com/darthriuk/PedidosNica/releases/latest" target="_blank" class="px-3 py-1.5 rounded-xl bg-[#06C167] text-black font-black text-[11px]">
+        Actualizar APK
+      </a>
+      <button onclick="window.location.reload(true)" class="px-2.5 py-1.5 rounded-xl bg-[#242C3A] text-white font-bold text-[11px]">
+        Recargar
+      </button>
+      <button onclick="document.getElementById('pnAutoUpdateBanner').classList.add('hidden')" class="text-[#A6A6A6] hover:text-white p-1">✕</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const GITHUB_REPO = 'darthriuk/PedidosNica';
+      const INSTALLED_VERSION = '1.1.0';
+      const NET_INFO = {
+        lanBaseUrl: 'http://192.168.1.20:3000',
+        tunnelBaseUrl: 'https://1de3b77b254e8b.lhr.life'
+      };
+      let currentQrMode = 'lan';
+
+      const APPS = [
+        { id: 'client', title: 'App Clientes', subtitle: 'Catálogo, Carrito y Tracking', path: '/client', icon: '🍔', apkName: 'PedidosNica-Cliente.apk' },
+        { id: 'driver', title: 'App Repartidor', subtitle: 'Radar GPS y Bolsa de Pedidos', path: '/driver', icon: '🛵', apkName: 'PedidosNica-Repartidor.apk' },
+        { id: 'restaurant', title: 'Suite Restaurante', subtitle: 'Comandas KDS y Menú', path: '/restaurant', icon: '🏪', apkName: 'PedidosNica-Restaurante.apk' },
+        { id: 'hub', title: 'Central Hub', subtitle: 'App Manager & Usuarios IAM', path: '/', icon: '🛡️', apkName: null }
+      ];
+
+      function getCurrentPortalApkUrl() {
+        const p = window.location.pathname;
+        if (p.startsWith('/driver')) return 'https://github.com/' + GITHUB_REPO + '/releases/latest/download/PedidosNica-Repartidor.apk';
+        if (p.startsWith('/restaurant')) return 'https://github.com/' + GITHUB_REPO + '/releases/latest/download/PedidosNica-Restaurante.apk';
+        return 'https://github.com/' + GITHUB_REPO + '/releases/latest/download/PedidosNica-Cliente.apk';
+      }
+
+      function renderMobileQrCards() {
+        const grid = document.getElementById('mobileAppsQrGrid');
+        if (!grid) return;
+        const base = currentQrMode === 'lan' ? NET_INFO.lanBaseUrl : NET_INFO.tunnelBaseUrl;
+
+        const btnLan = document.getElementById('btnModeLan');
+        const btnTunnel = document.getElementById('btnModeTunnel');
+        if (btnLan && btnTunnel) {
+          if (currentQrMode === 'lan') {
+            btnLan.className = 'p-3.5 rounded-2xl border-2 border-[#06C167] bg-[#06C167]/10 text-left transition-all';
+            btnTunnel.className = 'p-3.5 rounded-2xl border-2 border-[#2E2E2E] bg-[#191919] text-left transition-all';
+          } else {
+            btnTunnel.className = 'p-3.5 rounded-2xl border-2 border-[#06C167] bg-[#06C167]/10 text-left transition-all';
+            btnLan.className = 'p-3.5 rounded-2xl border-2 border-[#2E2E2E] bg-[#191919] text-left transition-all';
+          }
+        }
+
+        grid.innerHTML = APPS.map(function(app) {
+          const fullUrl = base + app.path;
+          const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=' + encodeURIComponent(fullUrl);
+          const apkDownloadUrl = app.apkName ? ('https://github.com/' + GITHUB_REPO + '/releases/latest/download/' + app.apkName) : null;
+          return '<div class="p-3.5 rounded-2xl bg-[#191919] border border-[#2E2E2E] flex flex-col items-center text-center justify-between gap-2.5">' +
+            '<div class="w-full">' +
+              '<div class="text-sm font-black text-white flex items-center justify-center gap-1.5"><span>' + app.icon + '</span> <span>' + app.title + '</span></div>' +
+              '<p class="text-[10px] text-[#A6A6A6] mt-0.5">' + app.subtitle + '</p>' +
+            '</div>' +
+            '<div class="bg-white p-2 rounded-xl shadow-md">' +
+              '<img src="' + qrSrc + '" alt="QR ' + app.title + '" class="w-32 h-32 object-contain" loading="lazy" />' +
+            '</div>' +
+            '<div class="w-full space-y-1.5">' +
+              '<input type="text" readonly value="' + fullUrl + '" onclick="this.select()" class="w-full bg-black border border-[#2E2E2E] rounded-lg px-2 py-1 text-[10px] font-mono text-[#06C167] text-center outline-none" />' +
+              '<div class="flex gap-1.5">' +
+                '<button onclick="navigator.clipboard.writeText(\'' + fullUrl + '\'); this.textContent=\'¡Copiado!\'; setTimeout(()=>this.textContent=\'Copiar Link\', 1500)" class="flex-1 py-1.5 rounded-lg bg-[#242424] hover:bg-[#2E2E2E] text-white font-bold text-[10px] transition-colors">Copiar Link</button>' +
+                '<a href="' + fullUrl + '" target="_blank" class="py-1.5 px-2.5 rounded-lg bg-[#06C167] text-black font-black text-[10px]">Abrir ↗</a>' +
+              '</div>' +
+              (apkDownloadUrl ? (
+                '<a href="' + apkDownloadUrl + '" target="_blank" class="block w-full py-1.5 rounded-lg bg-[#06C167]/15 hover:bg-[#06C167]/25 border border-[#06C167]/40 text-[#06C167] font-black text-[10px] transition-colors">📲 Descargar ' + app.apkName + '</a>'
+              ) : '') +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      window.checkGitHubReleaseUpdate = async function(manual) {
+        const statusBox = document.getElementById('githubReleaseStatusBox');
+        if (manual && statusBox) {
+          statusBox.textContent = 'Consultando GitHub Releases (' + GITHUB_REPO + ')...';
+        }
+        try {
+          // 1. Consultar endpoint local y GitHub Releases
+          const res = await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/releases/latest', {
+            headers: { 'Accept': 'application/vnd.github+json' }
+          });
+          if (res.ok) {
+            const release = await res.json();
+            const latestTag = (release.tag_name || '').replace(/^v/i, '');
+            const assetsCount = Array.isArray(release.assets) ? release.assets.length : 0;
+            if (statusBox) {
+              statusBox.innerHTML = '✅ Último Release en GitHub: <strong class="text-[#06C167]">v' + latestTag + '</strong> (' + assetsCount + ' paquetes compilados listos) • Publicado: ' + new Date(release.published_at).toLocaleString();
+            }
+            const seenTag = localStorage.getItem('pn_seen_release_version') || INSTALLED_VERSION;
+            if (latestTag && latestTag !== INSTALLED_VERSION && latestTag !== seenTag) {
+              const banner = document.getElementById('pnAutoUpdateBanner');
+              const titleEl = document.getElementById('pnUpdateBannerTitle');
+              const descEl = document.getElementById('pnUpdateBannerDesc');
+              const apkBtn = document.getElementById('pnUpdateBannerApkBtn');
+              if (banner && titleEl && descEl && apkBtn) {
+                titleEl.textContent = '🚀 Nueva Actualización Disponible (v' + latestTag + ')';
+                descEl.textContent = release.name || 'Nueva versión compilada en GitHub Releases lista para instalar.';
+                apkBtn.href = getCurrentPortalApkUrl();
+                banner.classList.remove('hidden');
+              }
+            } else if (manual) {
+              alert('✅ Estás en la versión más reciente (v' + (latestTag || INSTALLED_VERSION) + ').\n\nPuedes descargar los 3 archivos .APK directamente desde las tarjetas de abajo.');
+            }
+          } else {
+            if (statusBox) {
+              statusBox.innerHTML = '⚙️ GitHub Actions compilando versión inicial <strong class="text-[#06C167]">v' + INSTALLED_VERSION + '</strong> en <a href="https://github.com/' + GITHUB_REPO + '/actions" target="_blank" class="underline text-white">github.com/' + GITHUB_REPO + '/actions</a>...';
+            }
+          }
+        } catch (_) {
+          if (statusBox) {
+            statusBox.textContent = 'Versión activa local: v' + INSTALLED_VERSION + ' • Sincronizado con ' + GITHUB_REPO;
+          }
+        }
+      };
+
+      window.publishNewGitHubUpdate = async function() {
+        const verInput = document.getElementById('inpNewReleaseVersion');
+        const notesInput = document.getElementById('inpNewReleaseNotes');
+        const btn = document.getElementById('btnPublishGitHubUpdate');
+        const statusBox = document.getElementById('githubReleaseStatusBox');
+        const newVersion = verInput && verInput.value.trim() ? verInput.value.trim() : '';
+        const changelog = notesInput && notesInput.value.trim() ? notesInput.value.trim() : 'Actualización de plataforma PedidosNica';
+
+        if (!newVersion) {
+          alert('Ingresa el número de la nueva versión (por ejemplo: 1.0.1)');
+          return;
+        }
+
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Subiendo a GitHub...';
+        }
+        if (statusBox) {
+          statusBox.innerHTML = '⏳ Subiendo cambios al repositorio <strong class="text-[#06C167]">' + GITHUB_REPO + '</strong> y disparando compilación de APKs (v' + newVersion + ')...';
+        }
+
+        try {
+          const res = await fetch('/api/github/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newVersion: newVersion, changelog: changelog })
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            throw new Error(data.error || 'Error al publicar en GitHub');
+          }
+          if (statusBox) {
+            statusBox.innerHTML = '✅ Versión <strong class="text-[#06C167]">v' + data.versionInfo.version + '</strong> subida (' + data.filesUploaded + ' archivos). GitHub Actions está compilando los 3 APKs ahora mismo en <a href="' + data.actionsUrl + '" target="_blank" class="underline text-white">Ver Progreso ↗</a>';
+          }
+          const lblVer = document.getElementById('lblCurrentAppVersion');
+          if (lblVer) lblVer.textContent = 'v' + data.versionInfo.version;
+          if (verInput) verInput.value = '';
+          if (notesInput) notesInput.value = '';
+        } catch (err) {
+          if (statusBox) {
+            statusBox.innerHTML = '❌ Error: ' + err.message;
+          }
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🚀 Subir y Compilar Release';
+          }
+        }
+      };
+
+      window.setMobileQrMode = function(mode) {
+        currentQrMode = mode;
+        renderMobileQrCards();
+      };
+
+      window.openMobileAccessModal = function(defaultMode) {
+        if (defaultMode) currentQrMode = defaultMode;
+        const modal = document.getElementById('pnMobileAccessModal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          renderMobileQrCards();
+          window.checkGitHubReleaseUpdate(false);
+        }
+      };
+
+      window.closeMobileAccessModal = function() {
+        const modal = document.getElementById('pnMobileAccessModal');
+        if (modal) modal.classList.add('hidden');
+      };
+
+      // Verificar automáticamente al abrir cualquier aplicación y cada 60 segundos
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() { window.checkGitHubReleaseUpdate(false); }, 1500);
+        setInterval(function() { window.checkGitHubReleaseUpdate(false); }, 60000);
+      });
+    })();
+  </script>
+</body></html>
