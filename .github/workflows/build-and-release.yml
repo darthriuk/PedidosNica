@@ -22,9 +22,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Set up Gradle 8.5
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -33,6 +30,7 @@ jobs:
       - name: Compile Client, Driver & Restaurant APKs
         working-directory: android-apps
         run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null 2>&1 || true
           gradle assembleRelease --no-daemon
 
       - name: Prepare Release Artifacts
