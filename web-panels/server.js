@@ -115,11 +115,14 @@ function getHeader(title) {
     };
   </script>
   <style>
-    body {
+    html, body {
       font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: #000000;
       color: #FFFFFF;
       -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+      max-width: 100vw;
+      width: 100%;
     }
     .font-mono {
       font-family: 'JetBrains Mono', monospace;

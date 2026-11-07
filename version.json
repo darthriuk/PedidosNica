@@ -1,8 +1,8 @@
 {
-  "version": "1.3.0",
-  "versionCode": 4,
-  "tag": "v1.3.0",
-  "releasedAt": "2026-11-07T07:15:50.833Z",
+  "version": "1.4.0",
+  "versionCode": 5,
+  "tag": "v1.4.0",
+  "releasedAt": "2026-11-07T07:24:49.296Z",
   "repo": "darthriuk/PedidosNica",
   "lanUrl": "http://192.168.1.20:3000",
   "tunnelUrl": "https://1de3b77b254e8b.lhr.life",

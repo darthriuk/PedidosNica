@@ -85,6 +85,7 @@ public class MainActivity extends Activity {
         statusBadge.setTextColor(Color.parseColor("#A6A6A6"));
         statusBadge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         statusBadge.setPadding(dp(6), dp(2), dp(8), dp(2));
+        statusBadge.setVisibility(View.GONE);
         topBar.addView(statusBadge);
 
         TextView btnUpdate = makePillButton("Actualizar", "#06C167", "#000000");
@@ -150,10 +151,11 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
         settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowUniversalAccessFromFileURLs(true);
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(false);
+        settings.setUseWideViewPort(false);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setMediaPlaybackRequiresUserGesture(false);
+        webView.setHorizontalScrollBarEnabled(false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
             CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);

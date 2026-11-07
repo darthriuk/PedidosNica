@@ -12,26 +12,26 @@ function renderClientApp(initialView = 'catalog', options = {}) {
 
   return `${getHeader('PedidosNica | Comida a Domicilio')}
 
-  <div id="clientAppRoot" data-initial-view="${initialView}" class="min-h-screen flex flex-col bg-black text-white antialiased selection:bg-[#06C167] selection:text-black pb-28 sm:pb-0">
+  <div id="clientAppRoot" data-initial-view="${initialView}" class="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-black text-white antialiased selection:bg-[#06C167] selection:text-black pb-28 sm:pb-0">
 
-    <!-- TOPBAR PEDIDOSNICA (RESPONSIVE: PHONE, TABLET & DESKTOP - BOTONES GRANDES Y ERGONÓMICOS) -->
-    <header class="sticky top-0 z-40 bg-[#121212]/95 backdrop-blur-md border-b border-[#262626] px-3 sm:px-6 py-3 transition-all">
-      <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+    <!-- TOPBAR PEDIDOSNICA (OPTIMIZADO PARA MÓVIL SIN DESBORDAMIENTO HORIZONTAL) -->
+    <header class="sticky top-0 z-40 w-full bg-[#121212]/95 backdrop-blur-md border-b border-[#262626] px-3 sm:px-6 py-2.5 transition-all">
+      <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3 w-full min-w-0">
         
-        <!-- Logo PedidosNica + Selector de Dirección Activa (Estilo Uber Eats / Rappi) -->
-        <div class="flex items-center gap-2.5 sm:gap-4 shrink-0 min-w-0">
-          <a href="/client" class="flex items-center gap-1 shrink-0 group py-1">
-            <span class="font-extrabold text-xl sm:text-2xl tracking-tighter text-white">Pedidos</span>
-            <span class="font-black text-xl sm:text-2xl tracking-tighter text-[#06C167]">Nica</span>
+        <!-- Izquierda + Centro Flexible: Logo + Selector de Dirección (Se adapta sin empujar la pantalla) -->
+        <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <a href="/client" class="flex items-center gap-0.5 shrink-0 group py-1">
+            <span class="font-extrabold text-lg sm:text-2xl tracking-tighter text-white">Pedidos</span>
+            <span class="font-black text-lg sm:text-2xl tracking-tighter text-[#06C167]">Nica</span>
           </a>
 
-          <button type="button" id="headerAddressBtn" onclick="openClientProfileModal('addresses')" class="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 min-h-[44px] rounded-2xl bg-[#1F1F1F] hover:bg-[#282828] border border-[#2E2E2E] hover:border-[#06C167]/60 transition-all max-w-[190px] sm:max-w-[290px] text-left group active:scale-95" title="Cambiar o agregar dirección de entrega">
-            <span class="text-[#06C167] text-base shrink-0">📍</span>
-            <div class="truncate">
-              <span class="text-[10px] uppercase tracking-wider text-[#8A94A6] font-extrabold block leading-none mb-0.5">Entregar en</span>
+          <button type="button" id="headerAddressBtn" onclick="openClientProfileModal('addresses')" class="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 min-h-[42px] rounded-2xl bg-[#1F1F1F] hover:bg-[#282828] border border-[#2E2E2E] hover:border-[#06C167]/60 transition-all flex-1 min-w-0 max-w-[220px] sm:max-w-[320px] text-left group active:scale-95" title="Cambiar o agregar dirección de entrega">
+            <span class="text-[#06C167] text-sm shrink-0">📍</span>
+            <div class="truncate flex-1 min-w-0">
+              <span class="text-[9px] uppercase tracking-wider text-[#8A94A6] font-extrabold block leading-none mb-0.5">Entregar en</span>
               <span id="headerAddressLabel" class="text-xs sm:text-sm font-extrabold text-white group-hover:text-[#06C167] truncate block leading-tight">Galerías Santo Domingo, Managua</span>
             </div>
-            <span class="text-xs text-[#06C167] shrink-0">▼</span>
+            <span class="text-[10px] text-[#06C167] shrink-0">▼</span>
           </button>
         </div>
 
@@ -49,77 +49,44 @@ function renderClientApp(initialView = 'catalog', options = {}) {
           </div>
         </div>
 
-        <!-- Acciones Derecha: Rastrear Pedido, Carrito y Perfil -->
-        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-          
-          <!-- Botón Instalar App (PWA WebAPK) -->
-          <button id="floatingInstallBtn" onclick="triggerPWAInstall()" class="hidden sm:flex px-3.5 py-2.5 min-h-[44px] rounded-2xl text-xs sm:text-sm font-extrabold bg-[#06C167]/15 hover:bg-[#06C167]/25 border border-[#06C167]/40 text-[#06C167] transition-all items-center gap-1.5 active:scale-95">
-            <span class="text-base">📲</span>
-            <span>Instalar</span>
-          </button>
-
-          <!-- Botón Rastrear Pedido en Vivo -->
-          <button id="navTrackingBtn" onclick="toggleTrackingView()" class="px-3.5 sm:px-4 py-2.5 min-h-[44px] rounded-2xl text-xs sm:text-sm font-extrabold bg-[#1F1F1F] hover:bg-[#282828] border border-[#2E2E2E] text-white transition-all flex items-center gap-2 relative active:scale-95">
-            <span class="text-base">🧾</span>
-            <span class="hidden sm:inline">Pedidos</span>
-            <span id="activeOrderBadge" class="hidden w-3 h-3 rounded-full bg-[#06C167] animate-ping absolute -top-1 -right-1"></span>
-          </button>
-
+        <!-- Acciones Derecha Compactas: Solo Carrito y Perfil (Sin botón Pedidos ni Home arriba) -->
+        <div class="flex items-center gap-2 shrink-0">
           <!-- Botón Carrito Flotante (Uber Eats Verde) -->
-          <button id="cartBtn" onclick="toggleCartDrawer(true)" class="px-4 sm:px-5 py-2.5 min-h-[44px] rounded-2xl text-xs sm:text-sm font-black bg-[#06C167] hover:bg-[#05A357] text-black shadow-lg shadow-[#06C167]/25 transition-all flex items-center gap-2 transform active:scale-95">
-            <span class="text-base">🛒</span>
-            <span id="cartCountBadge" class="bg-black text-[#06C167] font-mono text-xs px-2 py-0.5 rounded-full font-black">0</span>
-            <span id="cartTotalHeader" class="hidden md:inline font-mono font-black text-sm">C$ 0.00</span>
+          <button id="cartBtn" onclick="toggleCartDrawer(true)" class="px-3 sm:px-4 py-2 min-h-[42px] rounded-2xl text-xs sm:text-sm font-black bg-[#06C167] hover:bg-[#05A357] text-black shadow-lg shadow-[#06C167]/25 transition-all flex items-center gap-1.5 transform active:scale-95 shrink-0">
+            <span class="text-sm">🛒</span>
+            <span id="cartCountBadge" class="bg-black text-[#06C167] font-mono text-xs px-1.5 py-0.5 rounded-full font-black">0</span>
+            <span id="cartTotalHeader" class="hidden lg:inline font-mono font-black text-sm">C$ 0.00</span>
           </button>
 
           <!-- Perfil del Comensal / Cliente -->
-          <button onclick="openClientProfileModal()" class="flex items-center gap-2 pl-1.5 sm:pl-2.5 py-1 min-h-[44px] border-l border-[#262626] hover:opacity-80 transition-opacity cursor-pointer text-left active:scale-95">
-            <img id="clientHeaderAvatar" src="https://ui-avatars.com/api/?name=Comensal&background=1F1F1F&color=06C167&bold=true" alt="Mi Cuenta" class="w-10 h-10 rounded-full object-cover border-2 border-[#06C167]/70" />
-            <div class="hidden lg:block">
+          <button onclick="openClientProfileModal()" class="flex items-center gap-2 py-0.5 min-h-[42px] hover:opacity-80 transition-opacity cursor-pointer text-left active:scale-95 shrink-0">
+            <img id="clientHeaderAvatar" src="https://ui-avatars.com/api/?name=Comensal&background=1F1F1F&color=06C167&bold=true" alt="Mi Cuenta" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-[#06C167]/70" />
+            <div class="hidden xl:block">
               <span id="clientHeaderName" class="text-sm font-extrabold text-white block">Iniciar Sesión</span>
               <span id="clientHeaderSublabel" class="text-xs text-[#06C167] font-bold block">Invitado • Entrar ▼</span>
             </div>
           </button>
-
-          <!-- Volver al Hub general -->
-          <a href="/" title="Volver al Selector de Portales" class="w-11 h-11 rounded-2xl bg-[#1F1F1F] hover:bg-[#282828] border border-[#2E2E2E] text-[#A6A6A6] hover:text-white transition-colors text-base flex items-center justify-center active:scale-95">
-            🏠
-          </a>
         </div>
 
       </div>
 
-      <!-- Buscador en Teléfonos (Mobile Input Bar Grande y Fácil de Tocar) -->
-      <div class="mt-3 md:hidden">
+      <!-- Buscador en Teléfonos (Mobile Input Bar Grande y 100% Ajustado al Ancho) -->
+      <div class="mt-2.5 md:hidden w-full">
         <div class="relative w-full">
-          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#757575] text-base">🔍</span>
+          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#757575] text-sm">🔍</span>
           <input 
             type="text" 
             id="searchInputMobile" 
             oninput="handleSearch(this.value)" 
             placeholder="Buscar restaurantes, pupusas, asados, pizzas..." 
-            class="w-full bg-[#1F1F1F] border border-[#2E2E2E] focus:border-[#06C167] rounded-2xl pl-11 pr-4 py-3 text-sm text-white placeholder-[#757575] focus:outline-none"
+            class="w-full bg-[#1F1F1F] border border-[#2E2E2E] focus:border-[#06C167] rounded-2xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#757575] focus:outline-none"
           />
         </div>
       </div>
     </header>
- 
-    <!-- BANNER DE INSTALACIÓN RÁPIDA PARA SMARTPHONES (PEDIDOSNICA PWA/WEBAPK) -->
-    <div id="mobileInstallPromptBanner" class="bg-gradient-to-r from-[#06C167]/15 via-[#161616] to-[#121212] border-b border-[#06C167]/30 px-4 py-3 flex items-center justify-between gap-3 sm:hidden">
-      <div class="flex items-center gap-3 min-w-0">
-        <img src="/icon-192.png" alt="PedidosNica" class="w-10 h-10 rounded-xl shrink-0 border border-[#06C167]/50" />
-        <div class="truncate">
-          <p class="font-extrabold text-white text-sm truncate">PedidosNica App</p>
-          <p class="text-xs text-[#A6A6A6]">Pantalla completa y acceso rápido</p>
-        </div>
-      </div>
-      <button onclick="triggerPWAInstall()" class="shrink-0 px-4 py-2.5 min-h-[42px] rounded-xl bg-[#06C167] hover:bg-[#05A357] text-black font-black text-xs sm:text-sm shadow-md shadow-[#06C167]/30 flex items-center gap-1.5 active:scale-95 transition-all">
-        <span>📲 Instalar</span>
-      </button>
-    </div>
 
-    <!-- VISTA PRINCIPAL: CATÁLOGO DE MENÚ (RESPONSIVE GRID) -->
-    <main id="catalogView" class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 transition-opacity">
+    <!-- VISTA PRINCIPAL: CATÁLOGO DE MENÚ (RESPONSIVE GRID SIN DESBORDAMIENTO) -->
+    <main id="catalogView" class="flex-1 max-w-7xl w-full min-w-0 mx-auto px-3 sm:px-6 py-4 sm:py-6 transition-opacity overflow-x-hidden">
       
       <!-- HERO DINÁMICO: BANNER DE RESTAURANTE O MARKETPLACE -->
       <section id="heroContainer" class="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-[#262626] bg-[#121212] mb-6 sm:mb-8 shadow-xl">
