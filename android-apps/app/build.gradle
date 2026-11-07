@@ -5,7 +5,11 @@ plugins {
 }
 
 def versionFile = file("../../version.json")
-def versionJson = versionFile.exists() ? new JsonSlurper().parseText(versionFile.text) : [version: "1.0.0", versionCode: 1, lanUrl: "http://192.168.1.20:3000", tunnelUrl: "https://1de3b77b254e8b.lhr.life"]
+def versionJson = versionFile.exists() ? new JsonSlurper().parseText(versionFile.text) : [:]
+int appVersionCode = (versionJson.versionCode ?: 1) as Integer
+String appVersionName = (versionJson.version ?: "1.0.0").toString()
+String appLanUrl = (versionJson.lanUrl ?: "http://192.168.1.20:3000").toString()
+String appTunnelUrl = (versionJson.tunnelUrl ?: "https://1de3b77b254e8b.lhr.life").toString()
 
 android {
     namespace 'com.pedidosnica.app'
@@ -14,12 +18,12 @@ android {
     defaultConfig {
         minSdk 24
         targetSdk 34
-        versionCode (versionJson.versionCode ?: 1) as int
-        versionName (versionJson.version ?: "1.0.0") as String
+        versionCode appVersionCode
+        versionName appVersionName
 
         buildConfigField "String", "GITHUB_REPO", "\"darthriuk/PedidosNica\""
-        buildConfigField "String", "DEFAULT_LAN_URL", "\"${versionJson.lanUrl ?: 'http://192.168.1.20:3000'}\""
-        buildConfigField "String", "DEFAULT_TUNNEL_URL", "\"${versionJson.tunnelUrl ?: 'https://1de3b77b254e8b.lhr.life'}\""
+        buildConfigField "String", "DEFAULT_LAN_URL", "\"${appLanUrl}\""
+        buildConfigField "String", "DEFAULT_TUNNEL_URL", "\"${appTunnelUrl}\""
     }
 
     signingConfigs {
