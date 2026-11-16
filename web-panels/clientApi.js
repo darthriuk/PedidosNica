@@ -240,8 +240,8 @@ async function handleClientApi(req, res, url, config) {
       }
 
       const orderId = crypto.randomUUID();
-      const itemsPayload = items.map((item, idx) => ({
-        id: `item-${Date.now()}-${idx}`,
+      const itemsPayload = items.map((item) => ({
+        id: crypto.randomUUID(),
         order_id: orderId,
         product_id: item.product_id,
         quantity: item.quantity || 1,
@@ -478,7 +478,7 @@ async function handleClientApi(req, res, url, config) {
         : (numRating >= 4 ? '¡Excelente servicio!' : 'Calificación enviada por el cliente.');
 
       const newReview = {
-        id: `rev-${Date.now()}`,
+        id: crypto.randomUUID(),
         restaurant_id: targetReviewRestId || RESTAURANT_ID,
         client_id: targetClientId,
         client_name,

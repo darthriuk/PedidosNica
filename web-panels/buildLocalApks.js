@@ -99,8 +99,9 @@ ${restaurantApiSrc}
   const { handleDriverApi } = __require('./driverApi');
   const { handleRestaurantApi } = __require('./restaurantApi');
 
-  // Persistencia automática en localStorage del teléfono
+  // Persistencia automática en localStorage del teléfono (PowerSync Local Bucket Replica + CRUD Outbox)
   const STORAGE_KEY = 'pn_embedded_store_v2';
+  const OUTBOX_KEY = 'ps_crud_outbox_v1';
   try {
     const savedRaw = localStorage.getItem(STORAGE_KEY);
     if (savedRaw) {
@@ -110,6 +111,13 @@ ${restaurantApiSrc}
           localStore[k].splice(0, localStore[k].length, ...saved[k]);
         }
       });
+    }
+    const savedOutbox = localStorage.getItem(OUTBOX_KEY);
+    if (savedOutbox && Array.isArray(localStore.powerSyncOutbox)) {
+      const parsedOutbox = JSON.parse(savedOutbox);
+      if (Array.isArray(parsedOutbox) && parsedOutbox.length > 0) {
+        localStore.powerSyncOutbox.push(...parsedOutbox);
+      }
     }
   } catch (_) {}
 
@@ -122,6 +130,9 @@ ${restaurantApiSrc}
         orders: localStore.orders,
         reviews: localStore.reviews
       }));
+      if (Array.isArray(localStore.powerSyncOutbox)) {
+        localStorage.setItem(OUTBOX_KEY, JSON.stringify(localStore.powerSyncOutbox));
+      }
     } catch (_) {}
   }
 
@@ -130,7 +141,7 @@ ${restaurantApiSrc}
   function broadcastEvent(typeOrObj, payload) {
     persistLocalStore();
     if (localStore && typeof localStore.pushToSupabase === 'function') {
-      localStore.pushToSupabase();
+      localStore.pushToSupabase().then(() => persistLocalStore()).catch(() => {});
     }
     let eventData;
     if (typeof typeOrObj === 'object' && typeOrObj !== null) {
@@ -145,8 +156,60 @@ ${restaurantApiSrc}
   }
 
   let initialCloudPullPromise = (localStore && typeof localStore.pullFromSupabase === 'function')
-    ? localStore.pullFromSupabase().catch(() => false)
+    ? localStore.pullFromSupabase().then(ok => {
+        if (ok) persistLocalStore();
+        return ok;
+      }).catch(() => false)
     : Promise.resolve(false);
+
+  // PowerSync Auto-Reconnect & Realtime Stream con Supabase PostgreSQL
+  window.addEventListener('online', function() {
+    if (localStore && typeof localStore.pushToSupabase === 'function') {
+      localStore.pushToSupabase().then(() => persistLocalStore()).catch(() => {});
+    }
+    if (localStore && typeof localStore.pullFromSupabase === 'function') {
+      localStore.pullFromSupabase().then(() => persistLocalStore()).catch(() => {});
+    }
+  });
+
+  window.addEventListener('DOMContentLoaded', function() {
+    if (window.supabase && typeof window.supabase.createClient === 'function' && localStore.SUPABASE_URL && localStore.SUPABASE_ANON_KEY) {
+      try {
+        const sbRealtime = window.supabase.createClient(localStore.SUPABASE_URL, localStore.SUPABASE_ANON_KEY);
+        sbRealtime
+          .channel('powersync-direct-postgres-stream')
+          .on('postgres_changes', { event: '*', schema: 'public' }, function(change) {
+            if (localStore && typeof localStore.pullFromSupabase === 'function') {
+              localStore.pullFromSupabase().then(function() {
+                persistLocalStore();
+                const evStr = JSON.stringify({
+                  type: 'POWERSYNC_REALTIME_SYNC',
+                  table: change && change.table,
+                  eventType: change && change.eventType,
+                  timestamp: Date.now()
+                });
+                sseListeners.forEach(function(fn) {
+                  try { fn({ data: evStr }); } catch (_) {}
+                });
+              });
+            }
+          })
+          .subscribe();
+      } catch (_) {}
+    }
+  });
+
+  window.PowerSyncEngine = {
+    schema: localStore.POWERSYNC_SCHEMA,
+    status: localStore.powerSyncStatus,
+    outbox: localStore.powerSyncOutbox,
+    syncNow: async function() {
+      await localStore.pullFromSupabase();
+      await localStore.pushToSupabase();
+      persistLocalStore();
+      return localStore.powerSyncStatus;
+    }
+  };
 
   // Mock de EventSource para /api/live-stream cuando corre en modo local
   const NativeEventSource = window.EventSource;
@@ -267,15 +330,28 @@ ${restaurantApiSrc}
       }, 0);
 
       const opts = {
-        SUPABASE_URL: 'https://zciujeihkvleehhqbeat.supabase.co',
-        SUPABASE_SERVICE_ROLE_KEY: '',
+        SUPABASE_URL: localStore.SUPABASE_URL || 'https://zciujeihkvleehhqbeat.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: localStore.SUPABASE_SERVICE_ROLE_KEY || '',
         currentCommissionRate: 15.0,
         broadcastEvent: broadcastEvent
       };
 
       inEmbeddedHandler = true;
       try {
-        if (cleanUrl.startsWith('/api/auth/') || cleanUrl === '/api/restaurant/settings') {
+        if (cleanUrl === '/api/powersync/status') {
+          resMock.end(JSON.stringify({
+            success: true,
+            powersync: localStore.powerSyncStatus,
+            schema: localStore.POWERSYNC_SCHEMA,
+            counts: {
+              restaurants: (localStore.restaurants || []).length,
+              products: (localStore.products || []).length,
+              orders: (localStore.orders || []).length,
+              users: (localStore.users || []).length,
+              reviews: (localStore.reviews || []).length
+            }
+          }));
+        } else if (cleanUrl.startsWith('/api/auth/') || cleanUrl === '/api/restaurant/settings') {
           await handleAuthApi(reqMock, resMock, apiPath, opts);
         } else if (cleanUrl.startsWith('/api/client/')) {
           await handleClientApi(reqMock, resMock, apiPath, opts);

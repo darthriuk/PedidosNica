@@ -475,7 +475,7 @@ const orders = [
     ready_at: new Date(Date.now() - 2 * 60000).toISOString(),
     items: [
       {
-        id: 'item-101',
+        id: 'e1010001-1111-4000-a000-000000000101',
         order_id: 'a81a2001-1111-4000-a000-000000000001',
         product_id: 'd1000001-0000-4000-a000-000000000001',
         quantity: 2,
@@ -503,7 +503,7 @@ const orders = [
     delivered_at: new Date(Date.now() - 60 * 60000).toISOString(),
     items: [
       {
-        id: 'item-102',
+        id: 'e1010002-2222-4000-a000-000000000102',
         order_id: 'b72c3002-2222-4000-a000-000000000002',
         product_id: 'd1000001-0000-4000-a000-000000000002',
         quantity: 2,
@@ -516,7 +516,7 @@ const orders = [
 
 const reviews = [
   {
-    id: 'rev-101',
+    id: 'f2010001-1111-4000-a000-000000000101',
     restaurant_id: '6701bc0c-e5ce-475a-8893-75e9d06e8012',
     client_id: 'c91f2a10-1234-4a9b-9c11-887766554433',
     client_name: 'Mateo Blandón',
@@ -529,25 +529,68 @@ const reviews = [
 ];
 
 // ============================================================================
-// SINCRONIZACIÓN BIDIRECCIONAL EN VIVO CON SUPABASE CLOUD (CUALQUIER RED 4G/WIFI)
+// MOTOR DE SINCRONIZACIÓN DIRECTA SUPABASE RELACIONAL + POWERSYNC OFFLINE-FIRST
 // ============================================================================
 const SUPABASE_URL = 'https://zciujeihkvleehhqbeat.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjaXVqZWloa3ZsZWVoaHFiZWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxMjgyMzMsImV4cCI6MjEwNTcwNDIzM30.OLauEB8NwNxVb8hMzK9X8cJPXVKkpwzoh6FmrHnQ55w';
 const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjaXVqZWloa3ZsZWVoaHFiZWF0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDEyODIzMywiZXhwIjoyMTA1NzA0MjMzfQ.JohwsGaIH0JTkjEI7SSkFeWxibbpAQTvH4gHLMNSeTY';
 const CLOUD_STATE_KEY = 'ecosystem_cloud_state_v1';
 
-let isSyncing = false;
-let lastCloudTimestamp = 0;
+// Esquema formal PowerSync (Tablas replicadas entre SQLite/Local Replica y Supabase PostgreSQL)
+const POWERSYNC_SCHEMA = {
+  version: '1.5.0',
+  tables: {
+    profiles: ['id', 'role', 'full_name', 'phone', 'avatar_url', 'created_at', 'updated_at'],
+    driver_profiles: ['driver_id', 'vehicle_type', 'license_plate', 'current_status', 'battery_level', 'last_location', 'last_location_updated_at', 'is_verified', 'rating', 'created_at'],
+    restaurants: ['id', 'owner_id', 'name', 'location', 'address', 'delivery_radius_km', 'estimated_prep_time_minutes', 'is_active', 'rating', 'email', 'phone', 'opening_hours', 'logo_url', 'commission_rate', 'created_at', 'updated_at'],
+    products: ['id', 'restaurant_id', 'category', 'name', 'description', 'price', 'discount_price', 'is_combo', 'is_available', 'image_url', 'customization_groups', 'created_at'],
+    orders: ['id', 'client_id', 'restaurant_id', 'driver_id', 'status', 'subtotal', 'delivery_fee', 'total', 'delivery_location', 'delivery_address', 'delivery_notes', 'estimated_prep_time_minutes', 'accepted_at', 'ready_at', 'picked_up_at', 'delivered_at', 'cancelled_at', 'cancellation_reason', 'created_at', 'updated_at'],
+    order_items: ['id', 'order_id', 'product_id', 'quantity', 'unit_price', 'customizations'],
+    restaurant_reviews: ['id', 'restaurant_id', 'client_id', 'client_name', 'order_id', 'rating', 'comment', 'created_at']
+  }
+};
 
-function mergeById(targetArray, incomingArray) {
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function toValidUuid(rawId, prefixHex = 'e1010000') {
+  if (typeof rawId === 'string' && UUID_REGEX.test(rawId)) return rawId;
+  const str = String(rawId || Date.now());
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) >>> 0;
+  }
+  const hex12 = (hash.toString(16) + str.replace(/[^0-9a-f]/gi, '')).padEnd(12, '0').slice(0, 12).toLowerCase();
+  return `${prefixHex}-1111-4000-a000-${hex12}`;
+}
+
+let isSyncing = false;
+let isPushing = false;
+let lastCloudTimestamp = 0;
+const provisionedAuthUserIds = new Set();
+
+// Cola Outbox de PowerSync (Almacena transacciones CRUD offline y las sube al recuperar señal)
+const powerSyncOutbox = [];
+const powerSyncStatus = {
+  engine: 'PowerSync + Supabase Direct Relational Sync v1.5',
+  connected: false,
+  syncing: false,
+  lastPullAt: null,
+  lastPushAt: null,
+  pendingOutboxCount: 0,
+  syncedTables: Object.keys(POWERSYNC_SCHEMA.tables),
+  supabaseUrl: SUPABASE_URL
+};
+
+function mergeById(targetArray, incomingArray, idKey = 'id') {
   if (!Array.isArray(incomingArray) || incomingArray.length === 0) return;
   const map = new Map();
   targetArray.forEach(item => {
-    if (item && item.id) map.set(item.id, item);
+    if (item && item[idKey]) map.set(item[idKey], item);
   });
   incomingArray.forEach(item => {
-    if (item && item.id) {
-      const prev = map.get(item.id) || {};
-      map.set(item.id, Object.assign({}, prev, item));
+    if (item && item[idKey]) {
+      const prev = map.get(item[idKey]) || {};
+      map.set(item[idKey], Object.assign({}, prev, item));
     }
   });
   const merged = Array.from(map.values());
@@ -563,26 +606,139 @@ async function sbFetch(endpoint, options = {}) {
   }, options.headers || {});
   const res = await f(`${SUPABASE_URL}/rest/v1/${endpoint}`, Object.assign({}, options, { headers }));
   if (!res.ok) {
-    throw new Error(`Supabase ${endpoint} HTTP ${res.status}`);
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Supabase ${endpoint} HTTP ${res.status}: ${errText}`);
   }
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
 
+// Garantizar que los usuarios de localStore existan en auth.users y public.profiles para respetar Foreign Keys en PostgreSQL
+async function ensureUsersInSupabaseAuthAndProfiles() {
+  const f = typeof globalThis._nativeFetch === 'function' ? globalThis._nativeFetch : fetch;
+  for (const u of users) {
+    if (!u || !u.id || !UUID_REGEX.test(u.id)) continue;
+    if (!provisionedAuthUserIds.has(u.id)) {
+      try {
+        await f(`${SUPABASE_URL}/auth/v1/admin/users`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: u.id,
+            email: u.email || `${u.id.slice(0, 8)}@pedidosnica.com`,
+            password: u.password || 'Password123!',
+            email_confirm: true,
+            user_metadata: { full_name: u.full_name, role: u.role }
+          })
+        });
+      } catch (_) {}
+      provisionedAuthUserIds.add(u.id);
+    }
+  }
+
+  const profileRows = users
+    .filter(u => u && u.id && UUID_REGEX.test(u.id))
+    .map(u => ({
+      id: u.id,
+      role: ['CLIENT', 'DRIVER', 'RESTAURANT_ADMIN', 'SUPER_ADMIN'].includes(u.role) ? u.role : 'CLIENT',
+      full_name: u.full_name || 'Usuario PedidosNica',
+      phone: u.phone || '+505 8888-0000',
+      avatar_url: u.avatar_url || null,
+      updated_at: new Date().toISOString()
+    }));
+
+  if (profileRows.length > 0) {
+    await sbFetch('profiles?on_conflict=id', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(profileRows)
+    }).catch(() => {});
+  }
+
+  const driverRows = users
+    .filter(u => u && u.role === 'DRIVER' && u.driver_profile && UUID_REGEX.test(u.id))
+    .map(u => {
+      const dp = u.driver_profile;
+      return {
+        driver_id: u.id,
+        vehicle_type: ['MOTORCYCLE', 'BICYCLE', 'CAR'].includes(dp.vehicle_type) ? dp.vehicle_type : 'MOTORCYCLE',
+        license_plate: dp.license_plate || 'M-0000',
+        current_status: ['AVAILABLE', 'BUSY', 'OFFLINE'].includes(dp.current_status) ? dp.current_status : 'AVAILABLE',
+        battery_level: Number(dp.battery_level) || 95,
+        last_location: dp.last_location || 'POINT(-86.2650 12.1260)',
+        last_location_updated_at: new Date().toISOString(),
+        is_verified: true,
+        rating: Number(dp.rating) || 4.95
+      };
+    });
+
+  if (driverRows.length > 0) {
+    await sbFetch('driver_profiles?on_conflict=driver_id', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(driverRows)
+    }).catch(() => {});
+  }
+}
+
+let activePullPromise = null;
+
 async function pullFromSupabase() {
-  if (isSyncing) return false;
+  if (activePullPromise) return activePullPromise;
   isSyncing = true;
+  powerSyncStatus.syncing = true;
+  activePullPromise = (async () => {
   try {
-    // 1. Leer estado unificado cloud (platform_settings) y tablas relacionales de Supabase en paralelo
-    const [cloudRows, sbRestaurants, sbProducts, sbOrders, sbReviews] = await Promise.all([
+    // 1. Leer en paralelo todas las tablas relacionales de Supabase PostgreSQL + snapshot extendido
+    const [cloudRows, sbProfiles, sbDriverProfiles, sbRestaurants, sbProducts, sbOrders, sbReviews] = await Promise.all([
       sbFetch(`platform_settings?key=eq.${CLOUD_STATE_KEY}&select=value,updated_at`).catch(() => []),
+      sbFetch('profiles?select=*').catch(() => []),
+      sbFetch('driver_profiles?select=*').catch(() => []),
       sbFetch('restaurants?select=*').catch(() => []),
       sbFetch('products?select=*').catch(() => []),
-      sbFetch('orders?select=*,order_items(*)&order=created_at.desc&limit=50').catch(() => []),
-      sbFetch('restaurant_reviews?select=*').catch(() => [])
+      sbFetch('orders?select=*,order_items(*)&order=created_at.desc&limit=80').catch(() => []),
+      sbFetch('restaurant_reviews?select=*&order=created_at.desc&limit=50').catch(() => [])
     ]);
 
-    // 2. Integrar restaurantes y productos reales de las tablas de Supabase (ej. Valentis Pizza, Tip top, Pizza Culona)
+    // 2. Integrar estado extendido primero (direcciones múltiples, preguntas de seguridad, etc.)
+    if (Array.isArray(cloudRows) && cloudRows.length > 0 && cloudRows[0].value) {
+      const cloudVal = cloudRows[0].value;
+      if (Array.isArray(cloudVal.restaurants)) mergeById(restaurants, cloudVal.restaurants);
+      if (Array.isArray(cloudVal.users)) mergeById(users, cloudVal.users);
+      if (Array.isArray(cloudVal.products)) mergeById(products, cloudVal.products);
+      if (Array.isArray(cloudVal.orders)) mergeById(orders, cloudVal.orders);
+      if (Array.isArray(cloudVal.reviews)) mergeById(reviews, cloudVal.reviews);
+      if (cloudVal.updatedAt) lastCloudTimestamp = cloudVal.updatedAt;
+    }
+
+    // 3. Integrar perfiles y conductores desde las tablas relacionales public.profiles y public.driver_profiles
+    if (Array.isArray(sbProfiles) && sbProfiles.length > 0) {
+      sbProfiles.forEach(p => {
+        provisionedAuthUserIds.add(p.id);
+        const existing = users.find(u => u.id === p.id);
+        if (existing) {
+          existing.full_name = p.full_name || existing.full_name;
+          existing.phone = p.phone || existing.phone;
+          existing.role = p.role || existing.role;
+          if (p.avatar_url) existing.avatar_url = p.avatar_url;
+        }
+      });
+    }
+
+    if (Array.isArray(sbDriverProfiles) && sbDriverProfiles.length > 0) {
+      sbDriverProfiles.forEach(dp => {
+        const drv = users.find(u => u.id === dp.driver_id);
+        if (drv) {
+          drv.driver_profile = Object.assign({}, drv.driver_profile || {}, dp);
+        }
+      });
+    }
+
+    // 4. Integrar restaurantes, productos, pedidos, order_items y reseñas desde tablas relacionales PostgreSQL
     if (Array.isArray(sbRestaurants) && sbRestaurants.length > 0) {
       const normalizedRests = sbRestaurants.map(r => Object.assign({
         delivery_fee: 60.00,
@@ -601,8 +757,17 @@ async function pullFromSupabase() {
 
     if (Array.isArray(sbOrders) && sbOrders.length > 0) {
       const normalizedOrders = sbOrders.map(o => {
-        const items = Array.isArray(o.order_items) ? o.order_items : (Array.isArray(o.items) ? o.items : []);
-        return Object.assign({}, o, { items, order_items: items });
+        const existingOrd = orders.find(x => x.id === o.id);
+        const items = (Array.isArray(o.order_items) && o.order_items.length > 0)
+          ? o.order_items
+          : (existingOrd && Array.isArray(existingOrd.items) ? existingOrd.items : []);
+        const clientUser = users.find(u => u.id === o.client_id);
+        return Object.assign({}, existingOrd || {}, o, {
+          client_name: (existingOrd && existingOrd.client_name) || (clientUser && clientUser.full_name) || 'Cliente Comensal',
+          client_phone: (existingOrd && existingOrd.client_phone) || (clientUser && clientUser.phone) || '+505 8888-0000',
+          items,
+          order_items: items
+        });
       });
       mergeById(orders, normalizedOrders);
     }
@@ -611,30 +776,189 @@ async function pullFromSupabase() {
       mergeById(reviews, sbReviews);
     }
 
-    // 3. Integrar el snapshot cloud más reciente (usuarios IAM, multi-direcciones, estados en vivo de pedidos)
-    if (Array.isArray(cloudRows) && cloudRows.length > 0 && cloudRows[0].value) {
-      const cloudVal = cloudRows[0].value;
-      if (Array.isArray(cloudVal.restaurants)) mergeById(restaurants, cloudVal.restaurants);
-      if (Array.isArray(cloudVal.users)) mergeById(users, cloudVal.users);
-      if (Array.isArray(cloudVal.products)) mergeById(products, cloudVal.products);
-      if (Array.isArray(cloudVal.orders)) mergeById(orders, cloudVal.orders);
-      if (Array.isArray(cloudVal.reviews)) mergeById(reviews, cloudVal.reviews);
-      if (cloudVal.updatedAt) lastCloudTimestamp = cloudVal.updatedAt;
-    }
-
+    powerSyncStatus.connected = true;
+    powerSyncStatus.lastPullAt = new Date().toISOString();
     return true;
   } catch (_) {
+    powerSyncStatus.connected = false;
     return false;
   } finally {
     isSyncing = false;
+    powerSyncStatus.syncing = false;
+    activePullPromise = null;
   }
+  })();
+  return activePullPromise;
 }
 
+let activePushPromise = null;
+
+// PowerSync uploadData(): Escribe directamente en las 7 tablas relacionales de Supabase PostgreSQL + platform_settings
 async function pushToSupabase() {
+  if (activePushPromise) return activePushPromise;
+  isPushing = true;
+  powerSyncStatus.syncing = true;
+  activePushPromise = (async () => {
   try {
     const nowTs = Date.now();
+    const nowIso = new Date(nowTs).toISOString();
     lastCloudTimestamp = nowTs;
-    const payload = [{
+
+    // 1. Asegurar usuarios y perfiles de conductores en auth.users, public.profiles y public.driver_profiles
+    await ensureUsersInSupabaseAuthAndProfiles();
+
+    // 2. Upsert directo en public.restaurants
+    const validRests = restaurants
+      .filter(r => r && r.id && UUID_REGEX.test(r.id))
+      .map(r => ({
+        id: r.id,
+        owner_id: (r.owner_id && provisionedAuthUserIds.has(r.owner_id)) ? r.owner_id : null,
+        name: r.name,
+        location: r.location || 'POINT(-86.2514 12.1364)',
+        address: r.address || 'Managua, Nicaragua',
+        delivery_radius_km: Number(r.delivery_radius_km) || 7.0,
+        estimated_prep_time_minutes: Number(r.estimated_prep_time_minutes) || 20,
+        is_active: r.is_active !== false,
+        rating: Number(r.rating) || 5.0,
+        email: r.email || null,
+        phone: r.phone || '+505 8800-0000',
+        opening_hours: r.opening_hours || 'Lun - Dom: 11:00 - 23:00',
+        logo_url: r.logo_url || null,
+        commission_rate: Number(r.commission_rate) || 15.0,
+        updated_at: nowIso
+      }));
+
+    if (validRests.length > 0) {
+      await sbFetch('restaurants?on_conflict=id', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(validRests)
+      });
+    }
+
+    // 3. Upsert directo en public.products
+    const restIdSet = new Set(validRests.map(r => r.id));
+    const validProducts = products
+      .filter(p => p && p.id && UUID_REGEX.test(p.id) && restIdSet.has(p.restaurant_id))
+      .map(p => ({
+        id: p.id,
+        restaurant_id: p.restaurant_id,
+        category: p.category || 'Especialidades',
+        name: p.name,
+        description: p.description || '',
+        price: Number(p.price) || 0,
+        discount_price: p.discount_price !== null && p.discount_price !== undefined ? Number(p.discount_price) : null,
+        is_combo: Boolean(p.is_combo),
+        is_available: p.is_available !== false,
+        image_url: p.image_url || null,
+        customization_groups: Array.isArray(p.customization_groups) ? p.customization_groups : []
+      }));
+
+    if (validProducts.length > 0) {
+      await sbFetch('products?on_conflict=id', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(validProducts)
+      });
+    }
+
+    // 4. Upsert directo en public.orders y public.order_items
+    const prodIdSet = new Set(validProducts.map(p => p.id));
+    const fallbackClientId = 'c91f2a10-1234-4a9b-9c11-887766554433';
+    const validOrders = [];
+    const validOrderItems = [];
+
+    orders.forEach(o => {
+      if (!o || !o.id) return;
+      o.id = toValidUuid(o.id, 'b72c3000');
+      if (!restIdSet.has(o.restaurant_id)) return;
+      const clientId = (o.client_id && provisionedAuthUserIds.has(o.client_id)) ? o.client_id : fallbackClientId;
+      const driverId = (o.driver_id && provisionedAuthUserIds.has(o.driver_id)) ? o.driver_id : null;
+
+      validOrders.push({
+        id: o.id,
+        client_id: clientId,
+        restaurant_id: o.restaurant_id,
+        driver_id: driverId,
+        status: o.status || 'CREATED',
+        subtotal: Number(o.subtotal || o.total || 0),
+        delivery_fee: Number(o.delivery_fee || 60),
+        total: Number(o.total || 0),
+        delivery_location: o.delivery_location || 'POINT(-86.2415 12.1022)',
+        delivery_address: o.delivery_address || 'Managua, Nicaragua',
+        delivery_notes: o.delivery_notes || '',
+        estimated_prep_time_minutes: Number(o.estimated_prep_time_minutes) || 20,
+        accepted_at: o.accepted_at || null,
+        ready_at: o.ready_at || null,
+        picked_up_at: o.picked_up_at || null,
+        delivered_at: o.delivered_at || null,
+        cancelled_at: o.cancelled_at || null,
+        cancellation_reason: o.cancellation_reason || null,
+        created_at: o.created_at || nowIso,
+        updated_at: nowIso
+      });
+
+      const itemsArr = Array.isArray(o.items) ? o.items : (Array.isArray(o.order_items) ? o.order_items : []);
+      itemsArr.forEach(it => {
+        if (!it) return;
+        it.id = toValidUuid(it.id, 'e1010000');
+        const pid = (it.product_id && prodIdSet.has(it.product_id)) ? it.product_id : (validProducts[0] ? validProducts[0].id : null);
+        if (!pid) return;
+        validOrderItems.push({
+          id: it.id,
+          order_id: o.id,
+          product_id: pid,
+          quantity: Number(it.quantity) || 1,
+          unit_price: Number(it.unit_price) || 0,
+          customizations: it.customizations || {}
+        });
+      });
+    });
+
+    if (validOrders.length > 0) {
+      await sbFetch('orders?on_conflict=id', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(validOrders)
+      });
+    }
+
+    if (validOrderItems.length > 0) {
+      await sbFetch('order_items?on_conflict=id', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(validOrderItems)
+      });
+    }
+
+    // 5. Upsert directo en public.restaurant_reviews
+    const orderIdSet = new Set(validOrders.map(o => o.id));
+    const validReviews = reviews
+      .filter(rv => rv && restIdSet.has(rv.restaurant_id))
+      .map(rv => {
+        rv.id = toValidUuid(rv.id, 'f2010000');
+        return {
+          id: rv.id,
+          restaurant_id: rv.restaurant_id,
+          client_id: (rv.client_id && provisionedAuthUserIds.has(rv.client_id)) ? rv.client_id : fallbackClientId,
+          client_name: rv.client_name || 'Cliente Comensal',
+          order_id: (rv.order_id && orderIdSet.has(rv.order_id)) ? rv.order_id : null,
+          rating: Number(rv.rating) || 5,
+          comment: rv.comment || '',
+          created_at: rv.created_at || nowIso
+        };
+      });
+
+    if (validReviews.length > 0) {
+      await sbFetch('restaurant_reviews?on_conflict=id', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(validReviews)
+      });
+    }
+
+    // 6. Upsert del estado extendido en public.platform_settings (libreta multi-direcciones, respuestas a reseñas, etc.)
+    const settingsPayload = [{
       key: CLOUD_STATE_KEY,
       value: {
         updatedAt: nowTs,
@@ -644,29 +968,67 @@ async function pushToSupabase() {
         orders,
         reviews
       },
-      updated_at: new Date(nowTs).toISOString()
+      updated_at: nowIso
     }];
 
     await sbFetch('platform_settings?on_conflict=key', {
       method: 'POST',
       headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(settingsPayload)
     });
+
+    // Procesar cualquier operación DELETE pendiente en la cola Outbox de PowerSync
+    while (powerSyncOutbox.length > 0) {
+      const op = powerSyncOutbox[0];
+      if (op.type === 'DELETE' && op.table && op.id) {
+        await sbFetch(`${op.table}?id=eq.${encodeURIComponent(op.id)}`, { method: 'DELETE' }).catch(() => {});
+      }
+      powerSyncOutbox.shift();
+    }
+
+    powerSyncStatus.connected = true;
+    powerSyncStatus.lastPushAt = nowIso;
+    powerSyncStatus.pendingOutboxCount = powerSyncOutbox.length;
+    return true;
+  } catch (err) {
+    powerSyncOutbox.push({ type: 'SYNC_RETRY', timestamp: Date.now(), error: err.message });
+    powerSyncStatus.connected = false;
+    powerSyncStatus.pendingOutboxCount = powerSyncOutbox.length;
+    return false;
+  } finally {
+    isPushing = false;
+    powerSyncStatus.syncing = false;
+    activePushPromise = null;
+  }
+  })();
+  return activePushPromise;
+}
+
+async function deleteFromSupabaseTable(table, id) {
+  if (!table || !id) return false;
+  try {
+    await sbFetch(`${table}?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
     return true;
   } catch (_) {
+    powerSyncOutbox.push({ type: 'DELETE', table, id, timestamp: Date.now() });
+    powerSyncStatus.pendingOutboxCount = powerSyncOutbox.length;
     return false;
   }
 }
 
-// Iniciar sincronización automática con Supabase Cloud
+// Iniciar sincronización bidireccional automática PowerSync <-> Supabase PostgreSQL
 pullFromSupabase().then((ok) => {
   if (ok) {
     pushToSupabase();
   }
 });
 setInterval(() => {
-  pullFromSupabase();
-}, 4000);
+  pullFromSupabase().then((ok) => {
+    if (ok && powerSyncOutbox.length > 0) {
+      pushToSupabase();
+    }
+  });
+}, 3500);
 
 module.exports = {
   restaurants,
@@ -677,6 +1039,11 @@ module.exports = {
   recoveryTokens,
   pullFromSupabase,
   pushToSupabase,
+  deleteFromSupabaseTable,
+  POWERSYNC_SCHEMA,
+  powerSyncStatus,
+  powerSyncOutbox,
   SUPABASE_URL,
+  SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY
 };

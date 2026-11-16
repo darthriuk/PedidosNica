@@ -1718,6 +1718,27 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Endpoint de diagnóstico y estado de sincronización directa PowerSync + Supabase PostgreSQL
+  if (url === '/api/powersync/status' && req.method === 'GET') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    });
+    res.end(JSON.stringify({
+      success: true,
+      powersync: localStore.powerSyncStatus,
+      schema: localStore.POWERSYNC_SCHEMA,
+      counts: {
+        restaurants: (localStore.restaurants || []).length,
+        products: (localStore.products || []).length,
+        orders: (localStore.orders || []).length,
+        users: (localStore.users || []).length,
+        reviews: (localStore.reviews || []).length
+      }
+    }));
+    return;
+  }
+
   // Endpoint de versión de aplicación y estado de auto-actualización
   if (url === '/api/app-version' && req.method === 'GET') {
     const info = readVersionInfo();

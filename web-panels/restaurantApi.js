@@ -282,7 +282,7 @@ async function handleRestaurantApi(req, res, url, config) {
         created_at: new Date().toISOString(),
         items: [
           {
-            id: `item-${Date.now()}`,
+            id: crypto.randomUUID(),
             order_id: orderId,
             product_id: chosenProd ? chosenProd.id : 'd1000001-0000-4000-a000-000000000001',
             quantity: 2,
@@ -376,6 +376,9 @@ async function handleRestaurantApi(req, res, url, config) {
     const idx = localStore.products.findIndex(p => p.id === id);
     if (idx !== -1) {
       localStore.products.splice(idx, 1);
+      if (typeof localStore.deleteFromSupabaseTable === 'function') {
+        localStore.deleteFromSupabaseTable('products', id);
+      }
     }
 
     if (config.broadcastEvent) {
